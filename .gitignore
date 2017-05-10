@@ -2,3 +2,5 @@
 build/
 Win32/
 Tafl.dir/
+.vs/
+Tafl.obj
