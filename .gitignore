@@ -1,3 +1,5 @@
 .vscode
 tafl
-build
+build/
+Win32/
+Tafl.dir/
