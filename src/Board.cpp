@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Board.h"
+#include "../inc/Board.h"
 
 void Board::draw()
 {
