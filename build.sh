@@ -2,5 +2,5 @@
 
 commonFlags="-Wall -Werror -g -O0"
 commonLinkerFlags="-g"
-c++ $commonFlags tafl.cpp -o tafl -ldl $commonLinkerFlags
+c++ $commonFlags Tafl.cpp -o build/tafl -ldl $commonLinkerFlags
 
