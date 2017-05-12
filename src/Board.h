@@ -1,16 +1,18 @@
 #ifndef BOARD_H
 
+const uint8_t DIM = 7;
+
 enum FieldFlags
 {
-TARGET = 1,
- THRONE = 2,
-KING = 4,
-WHITE = 8,
-BLACK = 16,
+    TARGET = 1,
+    THRONE = 2,
+    KING = 4,
+    WHITE = 8,
+    BLACK = 16,
     BLOCKING = 32
 };
 
- class Field
+class Field
 {
     public:
     uint8_t flags = 0;
@@ -18,29 +20,46 @@ BLACK = 16,
     bool hasFlags(uint8_t flags);
 };
 
-const uint8_t DIM = 7;
+class GameState;
 
- class GameState;
-
- class Move
+class Move
 {
     public:
-    Move* next;
+    Move* nextSibling = 0;
     GameState* resulting;
+    Vector2 start;
+    Vector2 end;
 };
 
- class GameState
+class GameState
 {
+    private:
+    void copyFieldsTo(GameState* dest);
+    void calculateMovesInDirection(uint8_t row, uint8_t col, Vector2 dir);
+    
     public:
     Field fields[DIM][DIM];
-    Move* firstMove;
+    Move* firstChild = 0;
+    uint32_t moveCount = 0;
+    void draw();
+    void calculateNextBlackMoves();
 };
 
- class Board
+inline void GameState::copyFieldsTo(GameState* dest)
+{
+    for (uint8_t col = 0; col < DIM; col++)
+    {
+        for (uint8_t row = 0; row < DIM; row++)
+        {
+            dest->fields[col][row] = this->fields[col][row];
+        }
+    }
+}
+
+class Board
 {
     public:
     GameState* state;
-    void draw();
 };
 
 #define BOARD_H
