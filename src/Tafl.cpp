@@ -1,8 +1,10 @@
+#include <string>
+#include <iostream>
 #include "Board.cpp"
 
 int main()
 {
-     Board b;
+    Board b;
     b.state = new GameState();
     
     b.state->fields[0][0].setFlags(TARGET | BLOCKING);
@@ -28,7 +30,7 @@ int main()
     
     b.draw();
     
-    getchar();
+    std::cin.get();
     
     return 0;
 }
