@@ -2,7 +2,7 @@
 
 const uint8_t DIM = 7;
 
-enum FieldFlags
+enum FieldFlag
 {
     TARGET = 1,
     THRONE = 2,
@@ -17,6 +17,7 @@ class Field
     public:
     uint8_t flags = 0;
     void setFlags(uint8_t flags);
+    void removeFlags(uint8_t flags);
     bool hasFlags(uint8_t flags);
 };
 
@@ -31,18 +32,30 @@ class Move
     Vector2 end;
 };
 
+// TODO(jan): Move the player class to a smarter location
+class Player
+{
+    public:
+    FieldFlag allyFlag;
+    FieldFlag enemyFlag;
+};
+
 class GameState
 {
     private:
     void copyFieldsTo(GameState* dest);
-    void calculateMovesInDirection(uint8_t row, uint8_t col, Vector2 dir);
+    bool isFieldPosValid(Vector2 pos);
+    Field* getFieldAtPos(Vector2 pos);
+    void calculateMovesInDirection(Player* player, uint8_t row, 
+                                   uint8_t col, Vector2 dir);
+    void testCaptureInDirection(Player* player, Vector2 testFieldP, Vector2 testDir);
     
     public:
     Field fields[DIM][DIM];
     Move* firstChild = 0;
     uint32_t moveCount = 0;
     void draw();
-    void calculateNextBlackMoves();
+    void calculateNextMoves(Player* player);
 };
 
 inline void GameState::copyFieldsTo(GameState* dest)
@@ -54,6 +67,24 @@ inline void GameState::copyFieldsTo(GameState* dest)
             dest->fields[col][row] = this->fields[col][row];
         }
     }
+}
+
+inline bool GameState::isFieldPosValid(Vector2 pos)
+{
+    bool result = 
+        (pos.x >= 0) &&
+        (pos.y >= 0) &&
+        (pos.x < DIM) &&
+        (pos.y < DIM);
+    
+    return result;
+}
+
+inline Field* GameState::getFieldAtPos(Vector2 pos)
+{
+    Field* result = &this->fields[pos.y][pos.x];
+    
+    return result;
 }
 
 class Board

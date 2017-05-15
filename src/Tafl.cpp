@@ -29,19 +29,57 @@ void initBrandubh(Board* b)
     b->state->fields[3][3].setFlags(KING | THRONE | BLOCKING);
 }
 
+void initTest(Board* b)
+{
+    b->state = new GameState();
+    b->state->fields[3][3].setFlags(WHITE);
+    b->state->fields[2][4].setFlags(BLACK);
+    b->state->fields[4][3].setFlags(BLACK);
+}
+
 int main()
 {
     Board b;
     initBrandubh(&b);
+    //initTest(&b);
+    
+    Player blackPlayer = {BLACK, WHITE};
+    Player whitePlayer = {WHITE, BLACK};
     
     b.state->draw();
+    b.state->calculateNextMoves(&blackPlayer);
     
-    b.state->calculateNextBlackMoves();
-    
-    std::cout << "Move count: " << std::to_string(b.state->moveCount) << std::endl;
+    std::cout << "Black Player Move count: ";
+    std::cout << std::to_string(b.state->moveCount) << std::endl;
     
     Move* m = b.state->firstChild;
     while(m)
+    {
+        std::cout << "Start -> col: " << std::to_string(m->start.y);
+        std::cout << " row: " << std::to_string(m->start.x) << std::endl;
+        
+        std::cout << "End -> col: " << std::to_string(m->end.y);
+        std::cout << " row: " << std::to_string(m->end.x) << std::endl;
+        
+        m->resulting->draw();
+        m = m->nextSibling;
+    }
+    
+    std::cin.get();
+    
+    std::cout << std::endl << std::endl;
+    std::cout << "White Player Round 1:" << std::endl;
+    
+    m = b.state->firstChild;
+    
+    m->resulting->draw();
+    m->resulting->calculateNextMoves(&whitePlayer);
+    
+    std::cout << "White Player Move Count: ";
+    std::cout << std::to_string(m->resulting->moveCount) << std::endl;
+    
+    m = m->resulting->firstChild;
+    while (m)
     {
         std::cout << "Start -> col: " << std::to_string(m->start.y);
         std::cout << " row: " << std::to_string(m->start.x) << std::endl;

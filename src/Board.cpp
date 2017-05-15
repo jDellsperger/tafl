@@ -43,70 +43,116 @@ void GameState::draw()
     std::cout << std::endl;
 }
 
-void GameState::calculateMovesInDirection(uint8_t row, uint8_t col, Vector2 dir)
+/* 
+NOTE(jan): Tests if a capture-situation (ally-enemy-ally) is present in the
+given direction
+*/
+void GameState::testCaptureInDirection(Player* player,
+                                       Vector2 testFieldP, 
+                                       Vector2 testDir)
 {
-    Vector2 end = {row, col};
-    end.add(dir);
-    
-    Field testField = this->fields[end.y][end.x];
-    while ((end.y >= 0) && 
-           (end.y < DIM) &&
-           (end.x >= 0) &&
-           (end.x < DIM) &&
-           (!testField.hasFlags(WHITE | BLACK | KING)))
+    Vector2 allyFieldP = add(testFieldP, scalarMultiply(testDir, 2));
+    if (this->isFieldPosValid(allyFieldP))
     {
-        if (!testField.hasFlags(BLOCKING))
+        Vector2 enemyFieldP = add(testFieldP, testDir);
+        Field* enemyField = this->getFieldAtPos(enemyFieldP);
+        if (enemyField->hasFlags(player->enemyFlag))
+        {
+            Field* allyField = this->getFieldAtPos(allyFieldP);
+            if (allyField->hasFlags(player->allyFlag))
+            {
+                enemyField->removeFlags(player->enemyFlag);
+            }
+        }
+    }
+}
+
+/* 
+NOTE(jan): Calculates possible moves from field at position col-row
+in a certain direction
+*/
+void GameState::calculateMovesInDirection(Player* player,
+                                          uint8_t row, 
+                                          uint8_t col, 
+                                          Vector2 dir)
+{
+    Vector2 start = {row, col};
+    Vector2 end = add(start, dir);
+    
+    Field* testField = this->getFieldAtPos(end);
+    while (this->isFieldPosValid(end) && !testField->hasFlags(WHITE | BLACK | KING))
+    {
+        if (!testField->hasFlags(BLOCKING))
         {
             Move* m = new Move();
-            m->start = {col, row};
             m->end = end;
             
             m->resulting = new GameState();
-            this->copyFieldsTo(m->resulting);
-            m->resulting->fields[col][row].setFlags(0);
-            m->resulting->fields[end.y][end.x].setFlags(BLACK);
+            GameState* resulting = m->resulting;
+            this->copyFieldsTo(resulting);
+            resulting->getFieldAtPos(start)->removeFlags(player->allyFlag);
+            resulting->getFieldAtPos(end)->setFlags(player->allyFlag);
+            
+            // NOTE(jan): Check if an enemy token was captured
+            
+            // Test up
+            Vector2 testDir = {0, -1};
+            resulting->testCaptureInDirection(player, end, testDir);
+            
+            // Test right
+            testDir = {1, 0};
+            resulting->testCaptureInDirection(player, end, testDir);
+            
+            // Test down
+            testDir = {0, 1};
+            resulting->testCaptureInDirection(player, end, testDir);
+            
+            // Test left
+            testDir = {-1, 0};
+            resulting->testCaptureInDirection(player, end, testDir);
             
             m->nextSibling = this->firstChild;
             this->firstChild = m;
             
             this->moveCount++;
-            
-            // TODO(jan): Check if an enemy token was captured
         }
         
         end.add(dir);
-        testField = this->fields[end.y][end.x];
+        testField = this->getFieldAtPos(end);
     }
 }
 
-void GameState::calculateNextBlackMoves()
+// TODO(jan): Handle the King for white player - we probably need a smarter way to 
+// handle players
+void GameState::calculateNextMoves(Player* player)
 {
     //NOTE(jan): Iterate over all fields to find black tokens
     for (uint8_t col = 0; col < DIM; col++)
     {
         for (uint8_t row = 0; row < DIM; row++)
         {
-            Field f = this->fields[col][row];
+            Vector2 p = {row, col};
+            Field* f = this->getFieldAtPos(p);
             
-            // NOTE(jan): If there is a black token, calculate moves
+            // NOTE(jan): If there is an allied token, calculate moves
             // for free fields up, down, left and right
-            if (f.hasFlags(BLACK))
+            if (f->hasFlags(player->allyFlag))
             {
                 // Test up
                 Vector2 dir = {0, -1};
-                this->calculateMovesInDirection(row, col, dir);
+                this->calculateMovesInDirection(player, row, col, dir);
                 
                 // Test right
                 dir = {1, 0};
-                this->calculateMovesInDirection(row, col, dir);
+                this->calculateMovesInDirection(player, row, col, dir);
                 
                 // Test down;
                 dir = {0, 1};
-                this->calculateMovesInDirection(row, col, dir);
+                this->calculateMovesInDirection(player, row, col, dir);
                 
                 // Test left
                 dir = {-1, 0};
-                this->calculateMovesInDirection(row, col, dir);
+                this->calculateMovesInDirection(player, row, col, dir);
             }
         }
     }
@@ -114,7 +160,12 @@ void GameState::calculateNextBlackMoves()
 
 void Field::setFlags(uint8_t flags)
 {
-    this->flags = flags;
+    this->flags = (this->flags | flags);
+}
+
+void Field::removeFlags(uint8_t flags)
+{
+    this->flags = (this->flags & ~flags);
 }
 
 bool Field::hasFlags(uint8_t flags)

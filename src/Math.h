@@ -13,6 +13,26 @@ inline void Vector2::add(Vector2 a)
     this->y += a.y;
 }
 
+inline Vector2 add(Vector2 a, Vector2 b)
+{
+    Vector2 result = {};
+    
+    result.x = a.x + b.x;
+    result.y = a.y + b.y;
+    
+    return result;
+}
+
+inline Vector2 scalarMultiply(Vector2 a, int i)
+{
+    Vector2 result = {};
+    
+    result.x = a.x * i;
+    result.y = a.y * i;
+    
+    return result;
+}
+
 #define MATH_H
 #endif
 
