@@ -38,17 +38,6 @@ inline bool Field::hasFlags(uint8_t flags)
     return result;
 }
 
-class GameState;
-
-class Move
-{
-    public:
-    Move* nextSibling = 0;
-    GameState* resulting;
-    Vector2 start;
-    Vector2 end;
-};
-
 // TODO(jan): Move the player class to a smarter location
 enum Player
 {
@@ -71,8 +60,10 @@ class GameState
     
     public:
     Field fields[DIM][DIM];
-    Move* firstChild = 0;
-    uint32_t moveCount = 0;
+    GameState* firstChild = 0;
+    GameState* nextSibling = 0;
+    GameState* parent = 0;
+    uint32_t childCount = 0;
     void draw();
     void calculateNextMoves(Player player);
 };

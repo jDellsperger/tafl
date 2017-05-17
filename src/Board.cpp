@@ -106,11 +106,7 @@ void GameState::calculateMovesInDirection(Player player,
     {
         if (!testField->hasFlags(BLOCKING))
         {
-            Move* m = new Move();
-            m->end = end;
-            
-            m->resulting = new GameState();
-            GameState* resulting = m->resulting;
+            GameState* resulting = new GameState();
             this->copyFieldsTo(resulting);
             
             Field* startField = resulting->getFieldAtPos(start);
@@ -137,10 +133,12 @@ void GameState::calculateMovesInDirection(Player player,
             testDir = {-1, 0};
             resulting->testCaptureInDirection(player, end, testDir);
             
-            m->nextSibling = this->firstChild;
-            this->firstChild = m;
+            // TODO(jan): Move this out to its proper method?
+            resulting->parent = this;
+            resulting->nextSibling = this->firstChild;
+            this->firstChild = resulting;
             
-            this->moveCount++;
+            this->childCount++;
         }
         
         end.add(dir);

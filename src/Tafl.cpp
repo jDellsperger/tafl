@@ -53,18 +53,18 @@ int main()
         b.state->draw();
         b.state->calculateNextMoves(maxPlayer);
         
-        if (moveCount >= b.state->moveCount)
+        if (moveCount >= b.state->childCount)
         {
             moveCount = 0;
         }
         
-        Move* m = b.state->firstChild;
+        GameState* next = b.state->firstChild;
         for (uint32_t i = 0; i < moveCount; i++)
         {
-            m = m->nextSibling;
+            next = next->nextSibling;
         }
         
-        b.state = m->resulting;
+        b.state = next;
         Player tempPlayer = maxPlayer;
         maxPlayer = minPlayer;
         minPlayer = tempPlayer;
