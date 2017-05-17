@@ -47,21 +47,33 @@ void GameState::draw()
 NOTE(jan): Tests if a capture-situation (ally-enemy-ally) is present in the
 given direction
 */
-void GameState::testCaptureInDirection(Player* player,
+void GameState::testCaptureInDirection(Player player,
                                        Vector2 testFieldP, 
                                        Vector2 testDir)
 {
+    uint8_t allyFlags, enemyFlags;
+    if (player == PLAYER_BLACK)
+    {
+        allyFlags = BLACK;
+        enemyFlags = WHITE;
+    }
+    else
+    {
+        allyFlags = (WHITE | KING);
+        enemyFlags = BLACK;
+    }
+    
     Vector2 allyFieldP = add(testFieldP, scalarMultiply(testDir, 2));
     if (this->isFieldPosValid(allyFieldP))
     {
         Vector2 enemyFieldP = add(testFieldP, testDir);
         Field* enemyField = this->getFieldAtPos(enemyFieldP);
-        if (enemyField->hasFlags(player->enemyFlag))
+        if (enemyField->hasFlags(enemyFlags))
         {
             Field* allyField = this->getFieldAtPos(allyFieldP);
-            if (allyField->hasFlags(player->allyFlag))
+            if (allyField->hasFlags(allyFlags))
             {
-                enemyField->removeFlags(player->enemyFlag);
+                enemyField->removeFlags(enemyFlags);
             }
         }
     }
@@ -71,11 +83,21 @@ void GameState::testCaptureInDirection(Player* player,
 NOTE(jan): Calculates possible moves from field at position col-row
 in a certain direction
 */
-void GameState::calculateMovesInDirection(Player* player,
+void GameState::calculateMovesInDirection(Player player,
                                           uint8_t row, 
                                           uint8_t col, 
                                           Vector2 dir)
 {
+    uint8_t allyFlags;
+    if (player == PLAYER_BLACK)
+    {
+        allyFlags = BLACK;
+    }
+    else
+    {
+        allyFlags = (WHITE | KING);
+    }
+    
     Vector2 start = {row, col};
     Vector2 end = add(start, dir);
     
@@ -90,8 +112,12 @@ void GameState::calculateMovesInDirection(Player* player,
             m->resulting = new GameState();
             GameState* resulting = m->resulting;
             this->copyFieldsTo(resulting);
-            resulting->getFieldAtPos(start)->removeFlags(player->allyFlag);
-            resulting->getFieldAtPos(end)->setFlags(player->allyFlag);
+            
+            Field* startField = resulting->getFieldAtPos(start);
+            // NOTE(jan): get the actual flag set on the field
+            uint8_t allyFlagAtStart = startField->flags & allyFlags;
+            startField->removeFlags(allyFlags);
+            resulting->getFieldAtPos(end)->setFlags(allyFlagAtStart);
             
             // NOTE(jan): Check if an enemy token was captured
             
@@ -122,10 +148,18 @@ void GameState::calculateMovesInDirection(Player* player,
     }
 }
 
-// TODO(jan): Handle the King for white player - we probably need a smarter way to 
-// handle players
-void GameState::calculateNextMoves(Player* player)
+void GameState::calculateNextMoves(Player player)
 {
+    uint8_t allyFlags;
+    if (player == PLAYER_BLACK)
+    {
+        allyFlags = BLACK;
+    }
+    else
+    {
+        allyFlags = (WHITE | KING);
+    }
+    
     //NOTE(jan): Iterate over all fields to find black tokens
     for (uint8_t col = 0; col < DIM; col++)
     {
@@ -136,7 +170,7 @@ void GameState::calculateNextMoves(Player* player)
             
             // NOTE(jan): If there is an allied token, calculate moves
             // for free fields up, down, left and right
-            if (f->hasFlags(player->allyFlag))
+            if (f->hasFlags(allyFlags))
             {
                 // Test up
                 Vector2 dir = {0, -1};
@@ -156,21 +190,4 @@ void GameState::calculateNextMoves(Player* player)
             }
         }
     }
-}
-
-void Field::setFlags(uint8_t flags)
-{
-    this->flags = (this->flags | flags);
-}
-
-void Field::removeFlags(uint8_t flags)
-{
-    this->flags = (this->flags & ~flags);
-}
-
-bool Field::hasFlags(uint8_t flags)
-{
-    bool result = this->flags & flags;
-    
-    return result;
 }

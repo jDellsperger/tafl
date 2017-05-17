@@ -32,9 +32,9 @@ void initBrandubh(Board* b)
 void initTest(Board* b)
 {
     b->state = new GameState();
-    b->state->fields[3][3].setFlags(WHITE);
-    b->state->fields[2][4].setFlags(BLACK);
-    b->state->fields[4][3].setFlags(BLACK);
+    b->state->fields[3][3].setFlags(BLACK);
+    b->state->fields[2][4].setFlags(KING);
+    b->state->fields[4][3].setFlags(WHITE);
 }
 
 int main()
@@ -43,11 +43,39 @@ int main()
     initBrandubh(&b);
     //initTest(&b);
     
-    Player blackPlayer = {BLACK, WHITE};
-    Player whitePlayer = {WHITE, BLACK};
+    Player maxPlayer = PLAYER_BLACK;
+    Player minPlayer = PLAYER_WHITE;
     
-    b.state->draw();
-    b.state->calculateNextMoves(&blackPlayer);
+    char s;
+    uint32_t moveCount = 0;
+    while (s != 'c')
+    {
+        b.state->draw();
+        b.state->calculateNextMoves(maxPlayer);
+        
+        if (moveCount >= b.state->moveCount)
+        {
+            moveCount = 0;
+        }
+        
+        Move* m = b.state->firstChild;
+        for (uint32_t i = 0; i < moveCount; i++)
+        {
+            m = m->nextSibling;
+        }
+        
+        b.state = m->resulting;
+        Player tempPlayer = maxPlayer;
+        maxPlayer = minPlayer;
+        minPlayer = tempPlayer;
+        moveCount++;
+        
+        s = getchar();
+    }
+    
+    /*
+        b.state->draw();
+    b.state->calculateNextMoves(maxPlayer);
     
     std::cout << "Black Player Move count: ";
     std::cout << std::to_string(b.state->moveCount) << std::endl;
@@ -73,7 +101,7 @@ int main()
     m = b.state->firstChild;
     
     m->resulting->draw();
-    m->resulting->calculateNextMoves(&whitePlayer);
+    m->resulting->calculateNextMoves(minPlayer);
     
     std::cout << "White Player Move Count: ";
     std::cout << std::to_string(m->resulting->moveCount) << std::endl;
@@ -91,7 +119,8 @@ int main()
         m = m->nextSibling;
     }
     
-    std::cin.get();
     
+    std::cin.get();
+    */
     return 0;
 }

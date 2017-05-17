@@ -21,6 +21,23 @@ class Field
     bool hasFlags(uint8_t flags);
 };
 
+inline void Field::setFlags(uint8_t flags)
+{
+    this->flags = (this->flags | flags);
+}
+
+inline void Field::removeFlags(uint8_t flags)
+{
+    this->flags = (this->flags & ~flags);
+}
+
+inline bool Field::hasFlags(uint8_t flags)
+{
+    bool result = this->flags & flags;
+    
+    return result;
+}
+
 class GameState;
 
 class Move
@@ -33,11 +50,9 @@ class Move
 };
 
 // TODO(jan): Move the player class to a smarter location
-class Player
+enum Player
 {
-    public:
-    FieldFlag allyFlag;
-    FieldFlag enemyFlag;
+    PLAYER_WHITE, PLAYER_BLACK
 };
 
 class GameState
@@ -46,16 +61,20 @@ class GameState
     void copyFieldsTo(GameState* dest);
     bool isFieldPosValid(Vector2 pos);
     Field* getFieldAtPos(Vector2 pos);
-    void calculateMovesInDirection(Player* player, uint8_t row, 
-                                   uint8_t col, Vector2 dir);
-    void testCaptureInDirection(Player* player, Vector2 testFieldP, Vector2 testDir);
+    void calculateMovesInDirection(Player player, 
+                                   uint8_t row, 
+                                   uint8_t col, 
+                                   Vector2 dir);
+    void testCaptureInDirection(Player player, 
+                                Vector2 testFieldP, 
+                                Vector2 testDir);
     
     public:
     Field fields[DIM][DIM];
     Move* firstChild = 0;
     uint32_t moveCount = 0;
     void draw();
-    void calculateNextMoves(Player* player);
+    void calculateNextMoves(Player player);
 };
 
 inline void GameState::copyFieldsTo(GameState* dest)
