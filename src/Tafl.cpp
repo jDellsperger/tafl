@@ -2,7 +2,9 @@
 #include <iostream>
 
 #include "Math.h"
-#include "Board.cpp"
+#include "Field.cpp"
+#include "Gamestate.cpp"
+
 
 void initBrandubh(Board* b)
 {
@@ -46,7 +48,7 @@ int main()
     Player maxPlayer = PLAYER_BLACK;
     Player minPlayer = PLAYER_WHITE;
     
-    char s;
+    char s = 'n';
     uint32_t moveCount = 0;
     while (s != 'c')
     {

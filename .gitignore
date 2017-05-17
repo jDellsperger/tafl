@@ -4,3 +4,8 @@ Win32/
 Tafl.dir/
 .vs/
 Tafl.obj
+src/Debug
+src/Tafl.sln
+src/Tafl.vcxproj
+src/Tafl.vcxproj.filters
+src/Tafl.vcxproj.user
