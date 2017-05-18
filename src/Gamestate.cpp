@@ -1,4 +1,5 @@
 #include "Gamestate.h"
+#include <limits>
 
 void GameState::draw()
 {
@@ -133,6 +134,11 @@ void GameState::calculateMovesInDirection(Player player,
             testDir = {-1, 0};
             resulting->testCaptureInDirection(player, end, testDir);
             
+			if (allyFlagAtStart == KING)
+			{
+				resulting->kingPos = end;
+			}
+
             // TODO(jan): Move this out to its proper method?
             resulting->parent = this;
             resulting->nextSibling = this->firstChild;
@@ -188,4 +194,67 @@ void GameState::calculateNextMoves(Player player)
             }
         }
     }
+}
+
+int16_t GameState::evaluate()
+{
+	Field f = this->fields[DIM][DIM];
+	int16_t val = 0;
+	Field* t;
+	Vector2 vt;
+	uint32_t d = UINT32_MAX;
+
+	Vector2 tl = { 0, 0 };
+	Vector2 tr = { DIM, 0 };
+	Vector2 dl = { 0, DIM };
+	Vector2 dr = { DIM, DIM };
+
+	Vector2 k = this->kingPos;
+
+	if (distanceSq(tl, k) < d)
+	{
+		d = distanceSq(tl, k);
+		t = this->getFieldAtPos(tl);
+		vt = tl;
+	}
+	
+	if (distanceSq(tr, k) < d)
+	{
+		d = distanceSq(tr, k);
+		t = this->getFieldAtPos(tr);
+		vt = tr;
+	}
+	
+	if (distanceSq(dl, k) < d)
+	{
+		d = distanceSq(dl, k);
+		t = this->getFieldAtPos(dl);
+		vt = dl;
+	}
+	
+	if (distanceSq(dr, k) < d)
+	{
+		d = distanceSq(dr, k);
+		t = this->getFieldAtPos(dr);
+		vt = dr;
+	}
+
+	for (int y = min(k.y, vt.y); y < max(k.y, vt.y); y++)
+	{
+		for (int x = min(k.x, vt.x); x < max(k.x, vt.x); x++)
+		{
+			Field f = this->fields[x][y];
+
+			if (f.hasFlags(WHITE)) 
+			{
+				val--;
+			}
+			else if (f.hasFlags(BLACK))
+			{
+				val = val + 2;
+			}
+		}
+	}
+
+	return val;
 }

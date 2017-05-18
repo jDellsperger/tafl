@@ -29,6 +29,8 @@ void initBrandubh(Board* b)
     b->state->fields[2][3].setFlags(WHITE);
     b->state->fields[4][3].setFlags(WHITE);
     b->state->fields[3][3].setFlags(KING | THRONE | BLOCKING);
+
+	b->state->kingPos = {4, 4};
 }
 
 void initTest(Board* b)
@@ -53,6 +55,7 @@ int main()
     while (s != 'c')
     {
         b.state->draw();
+		draw(b.state->kingPos);
         b.state->calculateNextMoves(maxPlayer);
         
         if (moveCount >= b.state->childCount)
@@ -71,6 +74,8 @@ int main()
         maxPlayer = minPlayer;
         minPlayer = tempPlayer;
         moveCount++;
+
+		std::cout << b.state->evaluate();
         
         s = getchar();
     }

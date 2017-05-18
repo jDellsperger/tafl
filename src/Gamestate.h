@@ -15,6 +15,7 @@ class GameState
     void copyFieldsTo(GameState* dest);
     bool isFieldPosValid(Vector2 pos);
     Field* getFieldAtPos(Vector2 pos);
+	int16_t val = NULL;
     void calculateMovesInDirection(Player player, 
                                    uint8_t row, 
                                    uint8_t col, 
@@ -30,7 +31,10 @@ class GameState
     GameState* parent = 0;
     uint32_t childCount = 0;
     void draw();
+	int16_t evaluate();
+	void recEvaluate(int maxDepth);
     void calculateNextMoves(Player player);
+	Vector2 kingPos = {};
 };
 
 inline void GameState::copyFieldsTo(GameState* dest)
