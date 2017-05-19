@@ -5,7 +5,6 @@
 #include "Field.cpp"
 #include "Gamestate.cpp"
 
-
 void initBrandubh(Board* b)
 {
     b->state = new GameState();
@@ -29,23 +28,33 @@ void initBrandubh(Board* b)
     b->state->fields[2][3].setFlags(WHITE);
     b->state->fields[4][3].setFlags(WHITE);
     b->state->fields[3][3].setFlags(KING | THRONE | BLOCKING);
-
-	b->state->kingPos = {4, 4};
+    
+    b->state->kingPos = {3, 3};
 }
 
 void initTest(Board* b)
 {
     b->state = new GameState();
-    b->state->fields[3][3].setFlags(BLACK);
-    b->state->fields[2][4].setFlags(KING);
-    b->state->fields[4][3].setFlags(WHITE);
+    b->state->fields[1][1].setFlags(BLACK);
+    b->state->fields[1][2].setFlags(BLACK);
+    b->state->fields[2][1].setFlags(BLACK);
+    
+    b->state->fields[1][5].setFlags(BLACK);
+    b->state->fields[2][5].setFlags(BLACK);
+    
+    b->state->fields[5][5].setFlags(BLACK);
+    b->state->fields[6][5].setFlags(BLACK);
+    
+    b->state->fields[3][3].setFlags(KING);
+    
+    b->state->kingPos = {3, 3};
 }
 
 int main()
 {
     Board b;
-    initBrandubh(&b);
-    //initTest(&b);
+    //initBrandubh(&b);
+    initTest(&b);
     
     Player maxPlayer = PLAYER_BLACK;
     Player minPlayer = PLAYER_WHITE;
@@ -55,7 +64,7 @@ int main()
     while (s != 'c')
     {
         b.state->draw();
-		draw(b.state->kingPos);
+        draw(b.state->kingPos);
         b.state->calculateNextMoves(maxPlayer);
         
         if (moveCount >= b.state->childCount)
@@ -74,8 +83,8 @@ int main()
         maxPlayer = minPlayer;
         minPlayer = tempPlayer;
         moveCount++;
-
-		std::cout << b.state->evaluate();
+        
+        std::cout << b.state->evaluate();
         
         s = getchar();
     }

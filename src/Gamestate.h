@@ -2,7 +2,6 @@
 
 const uint8_t DIM = 7;
 
-
 // TODO(jan): Move the player class to a smarter location
 enum Player
 {
@@ -15,7 +14,7 @@ class GameState
     void copyFieldsTo(GameState* dest);
     bool isFieldPosValid(Vector2 pos);
     Field* getFieldAtPos(Vector2 pos);
-	int16_t val = NULL;
+    int16_t val = INT16_MAX;
     void calculateMovesInDirection(Player player, 
                                    uint8_t row, 
                                    uint8_t col, 
@@ -31,10 +30,10 @@ class GameState
     GameState* parent = 0;
     uint32_t childCount = 0;
     void draw();
-	int16_t evaluate();
-	void recEvaluate(int maxDepth);
+    int16_t evaluate();
+    void recEvaluate(int maxDepth);
     void calculateNextMoves(Player player);
-	Vector2 kingPos = {};
+    Vector2 kingPos = {};
 };
 
 inline void GameState::copyFieldsTo(GameState* dest)
