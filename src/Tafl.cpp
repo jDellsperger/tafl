@@ -78,6 +78,7 @@ int main()
         
         b.state->draw();
         draw(b.state->kingPos);
+        std::cout << b.state->evaluate();
         b.state->calculateNextMoves(activePlayer);
         
         if (moveCount >= b.state->childCount)
@@ -113,10 +114,10 @@ int main()
         inactivePlayer = tempPlayer;
         moveCount++;
         
-        std::cout << b.state->evaluate();
-        
         s = getchar();
     }
+    
+    
     
     return 0;
 }

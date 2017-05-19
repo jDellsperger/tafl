@@ -208,9 +208,9 @@ int16_t GameState::evaluate()
     uint32_t d = UINT32_MAX;
     
     Vector2 tl = { 0, 0 };
-    Vector2 tr = { DIM, 0 };
-    Vector2 dl = { 0, DIM };
-    Vector2 dr = { DIM, DIM };
+    Vector2 tr = { DIM-1, 0 };
+    Vector2 dl = { 0, DIM-1 };
+    Vector2 dr = { DIM-1, DIM-1 };
     
     Vector2 k = this->kingPos;
     
@@ -241,21 +241,25 @@ int16_t GameState::evaluate()
         //t = this->getFieldAtPos(dr);
         vt = dr;
     }
+
+	std::cout << "Target is: " << vt.x << " | " << vt.y << std::endl;
     
-    for (int y = min(k.y, vt.y); y < max(k.y, vt.y); y++)
+    for (int y = min(k.y, vt.y); y <= max(k.y, vt.y); y++)
     {
-        for (int x = min(k.x, vt.x); x < max(k.x, vt.x); x++)
+        for (int x = min(k.x, vt.x); x <= max(k.x, vt.x); x++)
         {
-            Field f = this->fields[x][y];
+            Field f = this->fields[y][x];
             
             if (f.hasFlags(WHITE)) 
             {
-                val--;
+                //val--;
             }
             else if (f.hasFlags(BLACK))
             {
                 val = val + 2;
-            }
+				
+				std::cout << "Black at: " << x << " | " << y << std::endl;
+            }		
         }
     }
     
