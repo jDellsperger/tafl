@@ -14,7 +14,6 @@ class GameState
     void copyFieldsTo(GameState* dest);
     bool isFieldPosValid(Vector2 pos);
     Field* getFieldAtPos(Vector2 pos);
-    int16_t val = INT16_MAX;
     void calculateMovesInDirection(Player player, 
                                    uint8_t row, 
                                    uint8_t col, 
@@ -25,13 +24,13 @@ class GameState
     
     public:
     Field fields[DIM][DIM];
+    int16_t val = INT16_MAX;
     GameState* firstChild = 0;
     GameState* nextSibling = 0;
     GameState* parent = 0;
     uint32_t childCount = 0;
     void draw();
     int16_t evaluate();
-    void recEvaluate(int maxDepth);
     void calculateNextMoves(Player player);
     Vector2 kingPos = {};
 };

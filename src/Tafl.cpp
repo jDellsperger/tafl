@@ -53,19 +53,32 @@ void initTest(Board* b)
 int main()
 {
     Board b;
-    //initBrandubh(&b);
-    initTest(&b);
+    initBrandubh(&b);
+    //initTest(&b);
     
     Player maxPlayer = PLAYER_BLACK;
     Player minPlayer = PLAYER_WHITE;
+    Player activePlayer = maxPlayer;
+    Player inactivePlayer = minPlayer;
     
     char s = 'n';
     uint32_t moveCount = 0;
     while (s != 'c')
     {
+        std::cout << "------------------" << std::endl;
+        
+        if (activePlayer == maxPlayer)
+        {
+            std::cout << "max player active" << std::endl;
+        }
+        else
+        {
+            std::cout << "min player active" << std::endl;
+        }
+        
         b.state->draw();
         draw(b.state->kingPos);
-        b.state->calculateNextMoves(maxPlayer);
+        b.state->calculateNextMoves(activePlayer);
         
         if (moveCount >= b.state->childCount)
         {
@@ -73,15 +86,31 @@ int main()
         }
         
         GameState* next = b.state->firstChild;
-        for (uint32_t i = 0; i < moveCount; i++)
+        GameState* candidate = next;
+        for (uint32_t i = 0; i < b.state->childCount; i++)
         {
+            if (activePlayer == maxPlayer)
+            {
+                if (next->val > candidate->val)
+                {
+                    candidate = next;
+                }
+            }
+            else
+            {
+                if (next->val < candidate->val)
+                {
+                    candidate = next;
+                }
+            }
+            
             next = next->nextSibling;
         }
         
-        b.state = next;
-        Player tempPlayer = maxPlayer;
-        maxPlayer = minPlayer;
-        minPlayer = tempPlayer;
+        b.state = candidate;
+        Player tempPlayer = activePlayer;
+        activePlayer = inactivePlayer;
+        inactivePlayer = tempPlayer;
         moveCount++;
         
         std::cout << b.state->evaluate();
@@ -89,54 +118,5 @@ int main()
         s = getchar();
     }
     
-    /*
-        b.state->draw();
-    b.state->calculateNextMoves(maxPlayer);
-    
-    std::cout << "Black Player Move count: ";
-    std::cout << std::to_string(b.state->moveCount) << std::endl;
-    
-    Move* m = b.state->firstChild;
-    while(m)
-    {
-        std::cout << "Start -> col: " << std::to_string(m->start.y);
-        std::cout << " row: " << std::to_string(m->start.x) << std::endl;
-        
-        std::cout << "End -> col: " << std::to_string(m->end.y);
-        std::cout << " row: " << std::to_string(m->end.x) << std::endl;
-        
-        m->resulting->draw();
-        m = m->nextSibling;
-    }
-    
-    std::cin.get();
-    
-    std::cout << std::endl << std::endl;
-    std::cout << "White Player Round 1:" << std::endl;
-    
-    m = b.state->firstChild;
-    
-    m->resulting->draw();
-    m->resulting->calculateNextMoves(minPlayer);
-    
-    std::cout << "White Player Move Count: ";
-    std::cout << std::to_string(m->resulting->moveCount) << std::endl;
-    
-    m = m->resulting->firstChild;
-    while (m)
-    {
-        std::cout << "Start -> col: " << std::to_string(m->start.y);
-        std::cout << " row: " << std::to_string(m->start.x) << std::endl;
-        
-        std::cout << "End -> col: " << std::to_string(m->end.y);
-        std::cout << " row: " << std::to_string(m->end.x) << std::endl;
-        
-        m->resulting->draw();
-        m = m->nextSibling;
-    }
-    
-    
-    std::cin.get();
-    */
     return 0;
 }
