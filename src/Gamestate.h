@@ -31,6 +31,7 @@ class GameState
     uint32_t childCount = 0;
     void draw();
     int16_t evaluate();
+	int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
     void calculateNextMoves(Player player);
     Vector2 kingPos = {};
 };

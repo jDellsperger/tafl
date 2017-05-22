@@ -202,67 +202,60 @@ void GameState::calculateNextMoves(Player player)
 int16_t GameState::evaluate()
 {
     //Field f = this->fields[DIM][DIM];
-    int16_t val = 0;
+    
     //Field* t;
     Vector2 vt;
     uint32_t d = UINT32_MAX;
+	int bestValue = INT_MAX;
     
     Vector2 tl = { 0, 0 };
     Vector2 tr = { DIM-1, 0 };
     Vector2 dl = { 0, DIM-1 };
     Vector2 dr = { DIM-1, DIM-1 };
+
+	Vector2 vArray[] = { tl, tr, dl, dr };
     
     Vector2 k = this->kingPos;
-    
-    if (distanceSq(tl, k) < d)
-    {
-        d = distanceSq(tl, k);
-        //t = this->getFieldAtPos(tl);
-        vt = tl;
-    }
-    
-    if (distanceSq(tr, k) < d)
-    {
-        d = distanceSq(tr, k);
-        //t = this->getFieldAtPos(tr);
-        vt = tr;
-    }
-    
-    if (distanceSq(dl, k) < d)
-    {
-        d = distanceSq(dl, k);
-        //t = this->getFieldAtPos(dl);
-        vt = dl;
-    }
-    
-    if (distanceSq(dr, k) < d)
-    {
-        d = distanceSq(dr, k);
-        //t = this->getFieldAtPos(dr);
-        vt = dr;
-    }
 
-	std::cout << "Target is: " << vt.x << " | " << vt.y << std::endl;
+	for (int i = 0; i < 4; i++)
+	{
+		int temp = this->calcQuadrantValue(kingPos, vArray[i]);
+
+		if (bestValue > temp)
+		{
+			vt = vArray[i];
+			bestValue = temp;
+		}
+		
+	}
     
-    for (int y = min(k.y, vt.y); y <= max(k.y, vt.y); y++)
-    {
-        for (int x = min(k.x, vt.x); x <= max(k.x, vt.x); x++)
-        {
-            Field f = this->fields[y][x];
-            
-            if (f.hasFlags(WHITE)) 
-            {
-                //val--;
-            }
-            else if (f.hasFlags(BLACK))
-            {
-                val = val + 2;
-				
+  	std::cout << "Target is: " << vt.x << " | " << vt.y << std::endl;
+     
+    return bestValue;
+}
+
+int16_t GameState::calcQuadrantValue(Vector2 k, Vector2 vt)
+{
+	int16_t val = 0;
+	for (int y = min(k.y, vt.y); y <= max(k.y, vt.y); y++)
+	{
+		for (int x = min(k.x, vt.x); x <= max(k.x, vt.x); x++)
+		{
+			Field f = this->fields[y][x];
+
+			if (f.hasFlags(WHITE))
+			{
+				//*val;
+			}
+			else if (f.hasFlags(BLACK))
+			{
+				val = val + 2;
+
 				std::cout << "Black at: " << x << " | " << y << std::endl;
-            }		
-        }
-    }
-    
-    return val;
+			}
+		}
+	}
+
+	return val;
 }
 
