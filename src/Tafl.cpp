@@ -1,6 +1,6 @@
 #include <string>
 #include <iostream>
-#include <signal.h>
+#include <climits>
 
 #include "Math.h"
 #include "Field.cpp"
@@ -62,7 +62,7 @@ int main()
     Player minPlayer = PLAYER_WHITE;
     Player activePlayer = maxPlayer;
     Player inactivePlayer = minPlayer;
-
+    
     char s = 'n';
     uint32_t moveCount = 0;
     while (s != 'c')
@@ -116,9 +116,9 @@ int main()
         inactivePlayer = tempPlayer;
         moveCount++;
         
-
+        
         s = getchar();
-	}
+    }
     
     return 0;
 }
