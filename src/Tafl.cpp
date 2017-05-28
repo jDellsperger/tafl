@@ -6,7 +6,6 @@
 #include "Field.cpp"
 #include "Gamestate.cpp"
 
-
 void initBrandubh(Board* b)
 {
     b->state = new GameState();
@@ -58,10 +57,8 @@ int main()
     initBrandubh(&b);
     //initTest(&b);
     
-    Player maxPlayer = PLAYER_BLACK;
-    Player minPlayer = PLAYER_WHITE;
-    Player activePlayer = maxPlayer;
-    Player inactivePlayer = minPlayer;
+    Player activePlayer = PLAYER_MAX;
+    Player inactivePlayer = PLAYER_MIN;
     
     char s = 'n';
     uint32_t moveCount = 0;
@@ -69,7 +66,7 @@ int main()
     {
         std::cout << "------------------" << std::endl;
         
-        if (activePlayer == maxPlayer)
+        if (activePlayer == PLAYER_MAX)
         {
             std::cout << "max player active" << std::endl;
         }
@@ -81,7 +78,8 @@ int main()
         b.state->draw();
         draw(b.state->kingPos);
         std::cout << b.state->evaluate();
-        b.state->calculateNextMoves(activePlayer);
+        //b.state->calculateNextMoves(activePlayer);
+        b.state->minimax(3, activePlayer);
         
         if (moveCount >= b.state->childCount)
         {
@@ -92,7 +90,7 @@ int main()
         GameState* candidate = next;
         for (uint32_t i = 0; i < b.state->childCount; i++)
         {
-            if (activePlayer == maxPlayer)
+            if (activePlayer == PLAYER_MAX)
             {
                 if (next->val > candidate->val)
                 {
@@ -115,7 +113,6 @@ int main()
         activePlayer = inactivePlayer;
         inactivePlayer = tempPlayer;
         moveCount++;
-        
         
         s = getchar();
     }

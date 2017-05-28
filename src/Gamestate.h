@@ -5,7 +5,8 @@ const uint8_t DIM = 7;
 // TODO(jan): Move the player class to a smarter location
 enum Player
 {
-    PLAYER_WHITE, PLAYER_BLACK
+    PLAYER_MAX = 0, 
+    PLAYER_MIN = 1
 };
 
 class GameState
@@ -25,13 +26,14 @@ class GameState
     public:
     Field fields[DIM][DIM];
     int16_t val = INT16_MAX;
-    GameState* firstChild = 0;
-    GameState* nextSibling = 0;
-    GameState* parent = 0;
+    GameState* firstChild = nullptr;
+    GameState* nextSibling = nullptr;
+    GameState* parent = nullptr;
     uint32_t childCount = 0;
     void draw();
+    void minimax(int cutoff, Player player);
     int16_t evaluate();
-	int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
+    int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
     void calculateNextMoves(Player player);
     Vector2 kingPos = {};
 };

@@ -52,7 +52,7 @@ void GameState::testCaptureInDirection(Player player,
                                        Vector2 testDir)
 {
     uint8_t allyFlags, enemyFlags;
-    if (player == PLAYER_BLACK)
+    if (player == PLAYER_MAX)
     {
         allyFlags = BLACK;
         enemyFlags = WHITE;
@@ -89,7 +89,7 @@ void GameState::calculateMovesInDirection(Player player,
                                           Vector2 dir)
 {
     uint8_t allyFlags;
-    if (player == PLAYER_BLACK)
+    if (player == PLAYER_MAX)
     {
         allyFlags = BLACK;
     }
@@ -157,7 +157,7 @@ void GameState::calculateMovesInDirection(Player player,
 void GameState::calculateNextMoves(Player player)
 {
     uint8_t allyFlags;
-    if (player == PLAYER_BLACK)
+    if (player == PLAYER_MAX)
     {
         allyFlags = BLACK;
     }
@@ -208,21 +208,22 @@ int16_t GameState::evaluate()
     Vector2 dl = { 0, DIM-1 };
     Vector2 dr = { DIM-1, DIM-1 };
     
-    Vector2 edges[] = { tl, tr, dl, dr };
+    Vector2 targets[] = { tl, tr, dl, dr };
     
     for (int i = 0; i < 4; i++)
     {
-        int temp = this->calcQuadrantValue(this->kingPos, edges[i]);
+        //std::cout << "Quadrant " << i << ":" << std::endl;
+        int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
         
         if (bestValue > temp)
         {
-            target = edges[i];
+            target = targets[i];
             bestValue = temp;
         }
         
     }
     
-    std::cout << "Target is: " << target.x << " | " << target.y << std::endl;
+    //std::cout << "Target is: " << target.x << " | " << target.y << std::endl;
     
     return bestValue;
 }
@@ -244,7 +245,7 @@ int16_t GameState::calcQuadrantValue(Vector2 c, Vector2 t)
             {
                 val = val + 2;
                 
-                std::cout << "Black at: " << x << " | " << y << std::endl;
+                //std::cout << "Black at: " << x << " | " << y << std::endl;
             }
         }
     }
@@ -252,3 +253,59 @@ int16_t GameState::calcQuadrantValue(Vector2 c, Vector2 t)
     return val;
 }
 
+void GameState::minimax(int cutOff, Player player)
+{
+    // If cut-off depth is reached, return own value
+    if (cutOff == 0) {
+        this->val = this->evaluate();
+    }
+    else
+    {
+        cutOff--;
+        
+        if (player == PLAYER_MAX)
+        {
+            this->val = INT16_MIN;
+            
+            if (!this->childCount)
+            {
+                this->calculateNextMoves(PLAYER_MIN);
+            }
+            
+            GameState* s = this->firstChild;
+            while (s != nullptr)
+            {
+                s->minimax(cutOff, PLAYER_MIN);
+                
+                if (this->val < s->val)
+                {
+                    this->val = s->val;
+                }
+                
+                s = s->nextSibling;
+            }
+        }
+        else
+        {
+            this->val = INT16_MAX;
+            
+            if (!this->childCount)
+            {
+                this->calculateNextMoves(PLAYER_MAX);
+            }
+            
+            GameState* s = this->firstChild;
+            while (s != nullptr)
+            {
+                s->minimax(cutOff, PLAYER_MAX);
+                
+                if (this->val > s->val)
+                {
+                    this->val = s->val;
+                }
+                
+                s = s->nextSibling;
+            }
+        }
+    }
+}
