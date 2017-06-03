@@ -2,38 +2,39 @@
 
 enum FieldFlag
 {
-	TARGET = 1,
-	THRONE = 2,
-	KING = 4,
-	WHITE = 8,
-	BLACK = 16,
-	BLOCKING = 32
+    TARGET = 1,
+    THRONE = 2,
+    KING = 4,
+    WHITE = 8,
+    BLACK = 16,
+    BLOCKING = 32
 };
 
 class Field
 {
-public:
-	uint8_t flags = 0;
-	void setFlags(uint8_t flags);
-	void removeFlags(uint8_t flags);
-	bool hasFlags(uint8_t flags);
+    public:
+    uint8_t flags = 0;
+    void setFlags(uint8_t flags);
+    void removeFlags(uint8_t flags);
+    bool hasFlags(uint8_t flags);
 };
 
 inline void Field::setFlags(uint8_t flags)
 {
-	this->flags = (this->flags | flags);
+    this->flags = (this->flags | flags);
 }
 
 inline void Field::removeFlags(uint8_t flags)
 {
-	this->flags = (this->flags & ~flags);
+    this->flags = (this->flags & ~flags);
 }
 
+// Checks if the field has ONE of the flags passed OR-ed together
 inline bool Field::hasFlags(uint8_t flags)
 {
-	bool result = this->flags & flags;
-
-	return result;
+    bool result = this->flags & flags;
+    
+    return result;
 }
 
 #define FIELD_H

@@ -200,32 +200,44 @@ void GameState::calculateNextMoves(Player player)
 
 int16_t GameState::evaluate()
 {
-    Vector2 target;
-    int bestValue = INT_MAX;
+    int val = INT_MAX;
     
-    Vector2 tl = { 0, 0 };
-    Vector2 tr = { DIM-1, 0 };
-    Vector2 dl = { 0, DIM-1 };
-    Vector2 dr = { DIM-1, DIM-1 };
-    
-    Vector2 targets[] = { tl, tr, dl, dr };
-    
-    for (int i = 0; i < 4; i++)
+    Player victor = this->checkVictory();
+    if (victor == PLAYER_MIN)
     {
-        //std::cout << "Quadrant " << i << ":" << std::endl;
-        int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
+        val = -10;
+    }
+    else if (victor == PLAYER_MAX)
+    {
+        val = 10;
+    }
+    else {
+        Vector2 target;
         
-        if (bestValue > temp)
+        Vector2 tl = { 0, 0 };
+        Vector2 tr = { DIM-1, 0 };
+        Vector2 dl = { 0, DIM-1 };
+        Vector2 dr = { DIM-1, DIM-1 };
+        
+        Vector2 targets[] = { tl, tr, dl, dr };
+        
+        for (int i = 0; i < 4; i++)
         {
-            target = targets[i];
-            bestValue = temp;
+            //std::cout << "Quadrant " << i << ":" << std::endl;
+            int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
+            
+            if (val > temp)
+            {
+                target = targets[i];
+                val= temp;
+            }
+            
         }
         
+        //std::cout << "Target is: " << target.x << " | " << target.y << std::endl;
     }
     
-    //std::cout << "Target is: " << target.x << " | " << target.y << std::endl;
-    
-    return bestValue;
+    return val;
 }
 
 int16_t GameState::calcQuadrantValue(Vector2 c, Vector2 t)
@@ -251,6 +263,59 @@ int16_t GameState::calcQuadrantValue(Vector2 c, Vector2 t)
     }
     
     return val;
+}
+
+Player GameState::checkVictory()
+{
+    Player victor = PLAYER_MAX;
+    
+    // Check if the max player captured the king
+    Vector2 kingCap[4] = {
+        add(this->kingPos, {-1, 0}),
+        add(this->kingPos, {1, 0}),
+        add(this->kingPos, {0, -1}),
+        add(this->kingPos, {0, 1})
+    };
+    
+    for (int i = 0; i < 4; i++)
+    {
+        Vector2 capPos = kingCap[i];
+        if (this->isFieldPosValid(capPos))
+        {
+            Field* capField = this->getFieldAtPos(capPos);
+            if (!capField->hasFlags(BLACK))
+            {
+                victor = PLAYER_NONE;
+                break;
+            }
+        }
+        else
+        {
+            victor = PLAYER_NONE;
+            break;
+        }
+    }
+    
+    // Check if min player escaped with the king
+    Vector2 tPos[4] = {
+        {0, 0},
+        {DIM - 1, 0},
+        {0, DIM - 1},
+        {DIM - 1, DIM - 1}
+    };
+    
+    for (int t = 0; t < 4; t++)
+    {
+        Field* target = this->getFieldAtPos(tPos[t]);
+        
+        if (target->hasFlags(KING))
+        {
+            victor = PLAYER_MIN;
+            break;
+        }
+    }
+    
+    return victor;
 }
 
 void GameState::minimax(int cutOff, Player player)

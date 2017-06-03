@@ -54,8 +54,8 @@ void initTest(Board* b)
 int main()
 {
     Board b;
-    initBrandubh(&b);
-    //initTest(&b);
+    //initBrandubh(&b);
+    initTest(&b);
     
     Player activePlayer = PLAYER_MAX;
     Player inactivePlayer = PLAYER_MIN;
@@ -79,7 +79,7 @@ int main()
         draw(b.state->kingPos);
         std::cout << b.state->evaluate();
         //b.state->calculateNextMoves(activePlayer);
-        b.state->minimax(3, activePlayer);
+        b.state->minimax(4, activePlayer);
         
         if (moveCount >= b.state->childCount)
         {
