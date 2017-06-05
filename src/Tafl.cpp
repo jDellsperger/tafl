@@ -10,25 +10,20 @@ void initBrandubh(Board* b)
 {
     b->state = new GameState();
     
-    b->state->fields[0][0].setFlags(TARGET | BLOCKING);
-    b->state->fields[DIM-1][DIM-1].setFlags(TARGET | BLOCKING);
-    b->state->fields[0][DIM-1].setFlags(TARGET | BLOCKING);
-    b->state->fields[DIM-1][0].setFlags(TARGET | BLOCKING);
+    b->state->fields[0][3].setFlags(FIELD_BLACK);
+    b->state->fields[1][3].setFlags(FIELD_BLACK);
+    b->state->fields[5][3].setFlags(FIELD_BLACK);
+    b->state->fields[6][3].setFlags(FIELD_BLACK);
+    b->state->fields[3][0].setFlags(FIELD_BLACK);
+    b->state->fields[3][1].setFlags(FIELD_BLACK);
+    b->state->fields[3][5].setFlags(FIELD_BLACK);
+    b->state->fields[3][6].setFlags(FIELD_BLACK);
     
-    b->state->fields[0][3].setFlags(BLACK);
-    b->state->fields[1][3].setFlags(BLACK);
-    b->state->fields[5][3].setFlags(BLACK);
-    b->state->fields[6][3].setFlags(BLACK);
-    b->state->fields[3][0].setFlags(BLACK);
-    b->state->fields[3][1].setFlags(BLACK);
-    b->state->fields[3][5].setFlags(BLACK);
-    b->state->fields[3][6].setFlags(BLACK);
-    
-    b->state->fields[3][2].setFlags(WHITE);
-    b->state->fields[3][4].setFlags(WHITE);
-    b->state->fields[2][3].setFlags(WHITE);
-    b->state->fields[4][3].setFlags(WHITE);
-    b->state->fields[3][3].setFlags(KING | THRONE | BLOCKING);
+    b->state->fields[3][2].setFlags(FIELD_WHITE);
+    b->state->fields[3][4].setFlags(FIELD_WHITE);
+    b->state->fields[2][3].setFlags(FIELD_WHITE);
+    b->state->fields[4][3].setFlags(FIELD_WHITE);
+    b->state->fields[3][3].setFlags(FIELD_KING);
     
     b->state->kingPos = {3, 3};
 }
@@ -36,17 +31,12 @@ void initBrandubh(Board* b)
 void initTest(Board* b)
 {
     b->state = new GameState();
-    b->state->fields[1][1].setFlags(BLACK);
-    b->state->fields[1][2].setFlags(BLACK);
-    b->state->fields[2][1].setFlags(BLACK);
+    b->state->fields[3][4].setFlags(FIELD_BLACK);
+    b->state->fields[4][3].setFlags(FIELD_BLACK);
+    b->state->fields[2][3].setFlags(FIELD_BLACK);
+    b->state->fields[2][2].setFlags(FIELD_BLACK);
     
-    b->state->fields[1][5].setFlags(BLACK);
-    b->state->fields[2][5].setFlags(BLACK);
-    
-    b->state->fields[5][5].setFlags(BLACK);
-    b->state->fields[6][5].setFlags(BLACK);
-    
-    b->state->fields[3][3].setFlags(KING);
+    b->state->fields[3][3].setFlags(FIELD_KING);
     
     b->state->kingPos = {3, 3};
 }
@@ -54,8 +44,8 @@ void initTest(Board* b)
 int main()
 {
     Board b;
-    //initBrandubh(&b);
-    initTest(&b);
+    initBrandubh(&b);
+    //initTest(&b);
     
     Player activePlayer = PLAYER_MAX;
     Player inactivePlayer = PLAYER_MIN;
@@ -76,10 +66,26 @@ int main()
         }
         
         b.state->draw();
-        draw(b.state->kingPos);
-        std::cout << b.state->evaluate();
-        //b.state->calculateNextMoves(activePlayer);
+        
+        Player victor = b.state->checkVictory();
+        if (victor == PLAYER_MAX)
+        {
+            std::cout << "Max player won!!!" << std::endl;
+            getchar();
+            break;
+        }
+        else if (victor == PLAYER_MIN)
+        {
+            std::cout << "Min player won!!!" << std::endl;
+            getchar();
+            break;
+        }
+        
         b.state->minimax(4, activePlayer);
+        std::cout << "Minimax value: " << b.state->val << std::endl;
+        std::cout << "King position: ";
+        draw(b.state->kingPos);
+        std::cout << std::endl;
         
         if (moveCount >= b.state->childCount)
         {
@@ -88,24 +94,32 @@ int main()
         
         GameState* next = b.state->firstChild;
         GameState* candidate = next;
-        for (uint32_t i = 0; i < b.state->childCount; i++)
+        if (next != nullptr) {
+            for (uint32_t i = 0; i < b.state->childCount; i++)
+            {
+                if (activePlayer == PLAYER_MAX)
+                {
+                    if (next->val > candidate->val)
+                    {
+                        candidate = next;
+                    }
+                }
+                else
+                {
+                    if (next->val < candidate->val)
+                    {
+                        candidate = next;
+                    }
+                }
+                
+                next = next->nextSibling;
+            }
+        }
+        else
         {
-            if (activePlayer == PLAYER_MAX)
-            {
-                if (next->val > candidate->val)
-                {
-                    candidate = next;
-                }
-            }
-            else
-            {
-                if (next->val < candidate->val)
-                {
-                    candidate = next;
-                }
-            }
-            
-            next = next->nextSibling;
+            std::cout << "No more moves..." << std::endl;
+            getchar();
+            break;
         }
         
         b.state = candidate;

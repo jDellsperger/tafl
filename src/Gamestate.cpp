@@ -1,31 +1,34 @@
 #include "Gamestate.h"
 
+Vector2 Board::thronePos = {(int)(DIM/2), (int)(DIM/2)};
+
 void GameState::draw()
 {
-    for (int y = 0; y < DIM; y++)
+    for (int16_t y = 0; y < DIM; y++)
     {
-        for (int x = 0; x < DIM; x++)
+        for (int16_t x = 0; x < DIM; x++)
         {
+            Vector2 pos = {x, y};
             std::string status;
-            Field f = this->fields[y][x];
+            Field* f = this->getFieldAtPos(pos);
             
-            if (f.hasFlags(TARGET))
-            {
-                status = "T";
-            }
-            else if (f.hasFlags(KING))
+            if (f->hasState(FIELD_KING))
             {
                 status = "K";
             }
-            else if (f.hasFlags(WHITE))
+            else if (Board::isFieldPosTarget(pos))
+            {
+                status = "T";
+            }
+            else if (f->hasState(FIELD_WHITE))
             {
                 status = "W";
             }
-            else if (f.hasFlags(BLACK))
+            else if (f->hasState(FIELD_BLACK))
             {
                 status = "B";
             }
-            else if (f.hasFlags(THRONE))
+            else if (Board::isFieldPosThrone(pos))
             {
                 status = "C";
             }
@@ -54,13 +57,13 @@ void GameState::testCaptureInDirection(Player player,
     uint8_t allyFlags, enemyFlags;
     if (player == PLAYER_MAX)
     {
-        allyFlags = BLACK;
-        enemyFlags = WHITE;
+        allyFlags = FIELD_BLACK;
+        enemyFlags = FIELD_WHITE;
     }
     else
     {
-        allyFlags = (WHITE | KING);
-        enemyFlags = BLACK;
+        allyFlags = (FIELD_WHITE | FIELD_KING);
+        enemyFlags = FIELD_BLACK;
     }
     
     Vector2 allyFieldP = add(testFieldP, scalarMultiply(testDir, 2));
@@ -68,10 +71,10 @@ void GameState::testCaptureInDirection(Player player,
     {
         Vector2 enemyFieldP = add(testFieldP, testDir);
         Field* enemyField = this->getFieldAtPos(enemyFieldP);
-        if (enemyField->hasFlags(enemyFlags))
+        if (enemyField->hasOneOfFlags(enemyFlags))
         {
             Field* allyField = this->getFieldAtPos(allyFieldP);
-            if (allyField->hasFlags(allyFlags))
+            if (allyField->hasOneOfFlags(allyFlags))
             {
                 enemyField->removeFlags(enemyFlags);
             }
@@ -91,27 +94,33 @@ void GameState::calculateMovesInDirection(Player player,
     uint8_t allyFlags;
     if (player == PLAYER_MAX)
     {
-        allyFlags = BLACK;
+        allyFlags = FIELD_BLACK;
     }
     else
     {
-        allyFlags = (WHITE | KING);
+        allyFlags = (FIELD_WHITE | FIELD_KING);
     }
     
     Vector2 start = {row, col};
+    // NOTE(jan): get the actual flag set on the field
+    Field* originalStartField = this->getFieldAtPos(start);
+    uint8_t allyFlagAtStart = originalStartField->flags & allyFlags;
     Vector2 end = add(start, dir);
     
     Field* testField = this->getFieldAtPos(end);
-    while (this->isFieldPosValid(end) && !testField->hasFlags(WHITE | BLACK | KING))
+    while (this->isFieldPosValid(end) && testField->hasState(FIELD_EMPTY))
     {
-        if (!testField->hasFlags(BLOCKING))
+        // NOTE(jan): If the field is either a target or the throne,
+        // we are not allowed to place the token there
+        if (originalStartField->hasState(FIELD_KING) ||
+            (!Board::isFieldPosTarget(end) &&
+             !Board::isFieldPosThrone(end)))
         {
+            // TODO(jan): add new gamestate to zobrist hash-table if necessary
             GameState* resulting = new GameState();
             this->copyFieldsTo(resulting);
             
             Field* startField = resulting->getFieldAtPos(start);
-            // NOTE(jan): get the actual flag set on the field
-            uint8_t allyFlagAtStart = startField->flags & allyFlags;
             startField->removeFlags(allyFlags);
             resulting->getFieldAtPos(end)->setFlags(allyFlagAtStart);
             
@@ -133,7 +142,7 @@ void GameState::calculateMovesInDirection(Player player,
             testDir = {-1, 0};
             resulting->testCaptureInDirection(player, end, testDir);
             
-            if (allyFlagAtStart == KING)
+            if (allyFlagAtStart == FIELD_KING)
             {
                 resulting->kingPos = end;
             }
@@ -159,11 +168,11 @@ void GameState::calculateNextMoves(Player player)
     uint8_t allyFlags;
     if (player == PLAYER_MAX)
     {
-        allyFlags = BLACK;
+        allyFlags = FIELD_BLACK;
     }
     else
     {
-        allyFlags = (WHITE | KING);
+        allyFlags = (FIELD_WHITE | FIELD_KING);
     }
     
     //NOTE(jan): Iterate over all fields to find black tokens
@@ -176,7 +185,7 @@ void GameState::calculateNextMoves(Player player)
             
             // NOTE(jan): If there is an allied token, calculate moves
             // for free fields up, down, left and right
-            if (f->hasFlags(allyFlags))
+            if (f->hasOneOfFlags(allyFlags))
             {
                 // Test up
                 Vector2 dir = {0, -1};
@@ -223,7 +232,6 @@ int16_t GameState::evaluate()
         
         for (int i = 0; i < 4; i++)
         {
-            //std::cout << "Quadrant " << i << ":" << std::endl;
             int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
             
             if (val > temp)
@@ -233,8 +241,6 @@ int16_t GameState::evaluate()
             }
             
         }
-        
-        //std::cout << "Target is: " << target.x << " | " << target.y << std::endl;
     }
     
     return val;
@@ -249,15 +255,13 @@ int16_t GameState::calcQuadrantValue(Vector2 c, Vector2 t)
         {
             Field f = this->fields[y][x];
             
-            if (f.hasFlags(WHITE))
+            if (f.hasOneOfFlags(FIELD_WHITE))
             {
                 //*val;
             }
-            else if (f.hasFlags(BLACK))
+            else if (f.hasOneOfFlags(FIELD_BLACK))
             {
                 val = val + 2;
-                
-                //std::cout << "Black at: " << x << " | " << y << std::endl;
             }
         }
     }
@@ -283,7 +287,7 @@ Player GameState::checkVictory()
         if (this->isFieldPosValid(capPos))
         {
             Field* capField = this->getFieldAtPos(capPos);
-            if (!capField->hasFlags(BLACK))
+            if (!capField->hasState(FIELD_BLACK))
             {
                 victor = PLAYER_NONE;
                 break;
@@ -297,22 +301,9 @@ Player GameState::checkVictory()
     }
     
     // Check if min player escaped with the king
-    Vector2 tPos[4] = {
-        {0, 0},
-        {DIM - 1, 0},
-        {0, DIM - 1},
-        {DIM - 1, DIM - 1}
-    };
-    
-    for (int t = 0; t < 4; t++)
+    if (Board::isFieldPosTarget(this->kingPos))
     {
-        Field* target = this->getFieldAtPos(tPos[t]);
-        
-        if (target->hasFlags(KING))
-        {
-            victor = PLAYER_MIN;
-            break;
-        }
+        victor = PLAYER_MIN;
     }
     
     return victor;
@@ -327,49 +318,48 @@ void GameState::minimax(int cutOff, Player player)
     else
     {
         cutOff--;
+        this->calculateNextMoves(player);
         
-        if (player == PLAYER_MAX)
+        // If there are no possible moves, return own value
+        if (this->childCount == 0)
         {
-            this->val = INT16_MIN;
-            
-            if (!this->childCount)
-            {
-                this->calculateNextMoves(PLAYER_MIN);
-            }
-            
-            GameState* s = this->firstChild;
-            while (s != nullptr)
-            {
-                s->minimax(cutOff, PLAYER_MIN);
-                
-                if (this->val < s->val)
-                {
-                    this->val = s->val;
-                }
-                
-                s = s->nextSibling;
-            }
+            this->val = this->evaluate();
         }
         else
         {
-            this->val = INT16_MAX;
-            
-            if (!this->childCount)
-            {
-                this->calculateNextMoves(PLAYER_MAX);
-            }
-            
             GameState* s = this->firstChild;
-            while (s != nullptr)
+            
+            if (player == PLAYER_MAX)
             {
-                s->minimax(cutOff, PLAYER_MAX);
+                this->val = INT16_MIN;
                 
-                if (this->val > s->val)
+                while (s != nullptr)
                 {
-                    this->val = s->val;
+                    s->minimax(cutOff, PLAYER_MIN);
+                    
+                    if (this->val < s->val)
+                    {
+                        this->val = s->val;
+                    }
+                    
+                    s = s->nextSibling;
                 }
+            }
+            else
+            {
+                this->val = INT16_MAX;
                 
-                s = s->nextSibling;
+                while (s != nullptr)
+                {
+                    s->minimax(cutOff, PLAYER_MAX);
+                    
+                    if (this->val > s->val)
+                    {
+                        this->val = s->val;
+                    }
+                    
+                    s = s->nextSibling;
+                }
             }
         }
     }

@@ -24,7 +24,6 @@ class GameState
                                 Vector2 testFieldP, 
                                 Vector2 testDir);
     int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
-    Player checkVictory();
     
     public:
     Field fields[DIM][DIM];
@@ -38,6 +37,7 @@ class GameState
     int16_t evaluate();
     void calculateNextMoves(Player player);
     Vector2 kingPos = {};
+    Player checkVictory();
 };
 
 inline void GameState::copyFieldsTo(GameState* dest)
@@ -71,9 +71,44 @@ inline Field* GameState::getFieldAtPos(Vector2 pos)
 
 class Board
 {
+    private:
+    static Vector2 thronePos;
+    
     public:
     GameState* state;
+    static bool isFieldPosTarget(Vector2 pos);
+    static bool isFieldPosThrone(Vector2 pos);
 };
+
+inline bool Board::isFieldPosTarget(Vector2 pos)
+{
+    bool result = false;
+    
+    // TODO(jan): extract target vectors into array in board class
+    if (pos.x == 0)
+    {
+        if (pos.y == 0 || pos.y == DIM - 1)
+        {
+            result = true;
+        }
+    }
+    else if (pos.x == DIM - 1)
+    {
+        if (pos.y == 0 || pos.y == DIM - 1)
+        {
+            result = true;
+        }
+    }
+    
+    return result;
+}
+
+inline bool Board::isFieldPosThrone(Vector2 pos)
+{
+    bool result = Board::thronePos.equals(pos);
+    
+    return result;
+}
 
 #define BOARD_H
 #endif
