@@ -142,6 +142,8 @@ void GameState::calculateMovesInDirection(Player player,
             testDir = {-1, 0};
             resulting->testCaptureInDirection(player, end, testDir);
             
+            resulting->generateZobristHash();
+            
             if (allyFlagAtStart == FIELD_KING)
             {
                 resulting->kingPos = end;
@@ -363,4 +365,25 @@ void GameState::minimax(int cutOff, Player player)
             }
         }
     }
+}
+
+void GameState::generateZobristHash()
+{
+    Board* b = Board::getInstance();
+    int hash = 0;
+    
+    for (int16_t y = 0; y < DIM; y++)
+    {
+        for (int16_t x = 0; x < DIM; x++)
+        {
+            Vector2 fieldPos = {x, y};
+            Field* f = this->getFieldAtPos(fieldPos);
+            uint8_t s = f->flags;
+            
+            int zobristValue = b->getZobristValue(fieldPos, s);
+            hash = hash ^ zobristValue;
+        }
+    }
+    
+    this->zobristHash = hash;
 }

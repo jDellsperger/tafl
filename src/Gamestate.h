@@ -1,6 +1,4 @@
-#ifndef BOARD_H
-
-const uint8_t DIM = 7;
+#ifndef GAMESTATE_H
 
 // TODO(jan): Move the player class to a smarter location
 enum Player
@@ -26,6 +24,8 @@ class GameState
     int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
     
     public:
+    void generateZobristHash();
+    int zobristHash;
     Field fields[DIM][DIM];
     int16_t val = INT16_MAX;
     GameState* firstChild = nullptr;
@@ -69,46 +69,5 @@ inline Field* GameState::getFieldAtPos(Vector2 pos)
     return result;
 }
 
-class Board
-{
-    private:
-    static Vector2 thronePos;
-    
-    public:
-    GameState* state;
-    static bool isFieldPosTarget(Vector2 pos);
-    static bool isFieldPosThrone(Vector2 pos);
-};
-
-inline bool Board::isFieldPosTarget(Vector2 pos)
-{
-    bool result = false;
-    
-    // TODO(jan): extract target vectors into array in board class
-    if (pos.x == 0)
-    {
-        if (pos.y == 0 || pos.y == DIM - 1)
-        {
-            result = true;
-        }
-    }
-    else if (pos.x == DIM - 1)
-    {
-        if (pos.y == 0 || pos.y == DIM - 1)
-        {
-            result = true;
-        }
-    }
-    
-    return result;
-}
-
-inline bool Board::isFieldPosThrone(Vector2 pos)
-{
-    bool result = Board::thronePos.equals(pos);
-    
-    return result;
-}
-
-#define BOARD_H
+#define GAMESTATE_H
 #endif

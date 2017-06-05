@@ -1,9 +1,11 @@
 #include <string>
 #include <iostream>
 #include <climits>
+#include <cstdlib>
 
 #include "Math.h"
 #include "Field.cpp"
+#include "Board.h"
 #include "Gamestate.cpp"
 
 void initBrandubh(Board* b)
@@ -26,6 +28,7 @@ void initBrandubh(Board* b)
     b->state->fields[3][3].setFlags(FIELD_KING);
     
     b->state->kingPos = {3, 3};
+    b->state->generateZobristHash();
 }
 
 void initTest(Board* b)
@@ -39,13 +42,14 @@ void initTest(Board* b)
     b->state->fields[3][3].setFlags(FIELD_KING);
     
     b->state->kingPos = {3, 3};
+    b->state->generateZobristHash();
 }
 
 int main()
 {
-    Board b;
-    initBrandubh(&b);
-    //initTest(&b);
+    Board* b = Board::getInstance();
+    initBrandubh(b);
+    //initTest(b);
     
     Player activePlayer = PLAYER_MAX;
     Player inactivePlayer = PLAYER_MIN;
@@ -65,9 +69,9 @@ int main()
             std::cout << "min player active" << std::endl;
         }
         
-        b.state->draw();
+        b->state->draw();
         
-        Player victor = b.state->checkVictory();
+        Player victor = b->state->checkVictory();
         if (victor == PLAYER_MAX)
         {
             std::cout << "Max player won!!!" << std::endl;
@@ -81,21 +85,23 @@ int main()
             break;
         }
         
-        b.state->minimax(4, activePlayer);
-        std::cout << "Minimax value: " << b.state->val << std::endl;
+        b->state->minimax(4, activePlayer);
+        std::cout << "Minimax value: " << b->state->val << std::endl;
         std::cout << "King position: ";
-        draw(b.state->kingPos);
+        draw(b->state->kingPos);
         std::cout << std::endl;
         
-        if (moveCount >= b.state->childCount)
+        std::cout << "Zobrist hash: " << b->state->zobristHash << std::endl;
+        
+        if (moveCount >= b->state->childCount)
         {
             moveCount = 0;
         }
         
-        GameState* next = b.state->firstChild;
+        GameState* next = b->state->firstChild;
         GameState* candidate = next;
         if (next != nullptr) {
-            for (uint32_t i = 0; i < b.state->childCount; i++)
+            for (uint32_t i = 0; i < b->state->childCount; i++)
             {
                 if (activePlayer == PLAYER_MAX)
                 {
@@ -122,7 +128,7 @@ int main()
             break;
         }
         
-        b.state = candidate;
+        b->state = candidate;
         Player tempPlayer = activePlayer;
         activePlayer = inactivePlayer;
         inactivePlayer = tempPlayer;
