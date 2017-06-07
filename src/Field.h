@@ -16,6 +16,7 @@ class Field
     void removeFlags(uint8_t flags);
     bool hasOneOfFlags(uint8_t flags);
     bool hasState(FieldState s);
+    void setState(FieldState s);
 };
 
 inline void Field::setFlags(uint8_t flags)
@@ -42,6 +43,11 @@ inline bool Field::hasState(FieldState s)
     bool result = (this->flags == s);
     
     return result;
+}
+
+inline void Field::setState(FieldState s)
+{
+    this->flags = s;
 }
 
 #define FIELD_H

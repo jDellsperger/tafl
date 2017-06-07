@@ -8,36 +8,53 @@ enum Player
     PLAYER_MIN = 2
 };
 
+enum FieldState
+{
+    FIELD_EMPTY = 0,
+    FIELD_KING = 1,
+    FIELD_WHITE = 2,
+    FIELD_BLACK = 4
+};
+
+class Move;
+
 class GameState
 {
     private:
-    void copyFieldsTo(GameState* dest);
-    bool isFieldPosValid(Vector2 pos);
-    Field* getFieldAtPos(Vector2 pos);
-    void calculateMovesInDirection(Player player, 
-                                   uint8_t row, 
-                                   uint8_t col, 
-                                   Vector2 dir);
-    void testCaptureInDirection(Player player, 
-                                Vector2 testFieldP, 
-                                Vector2 testDir);
+    FieldState getStateAtPos(Vector2 pos);
     int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
     
     public:
-    void generateZobristHash();
-    int zobristHash;
-    Field fields[DIM][DIM];
+    uint16_t zobristHash;
+    FieldState fields[DIM][DIM];
     int16_t val = INT16_MAX;
-    GameState* firstChild = nullptr;
-    GameState* nextSibling = nullptr;
-    GameState* parent = nullptr;
-    uint32_t childCount = 0;
+    Move* firstMaxPlayerMove = nullptr;
+    Move* firstMinPlayerMove = nullptr;
+    uint32_t maxPlayerMoveCount = 0;
+    uint32_t minPlayerMoveCount = 0;
+    Vector2 kingPos = {};
+    bool maxPlayerMovesCalculated = false;
+    bool minPlayerMovesCalculated = false;
+    
+    void generateZobristHash();
     void draw();
     void minimax(int cutoff, Player player);
     int16_t evaluate();
-    void calculateNextMoves(Player player);
-    Vector2 kingPos = {};
+    void calculateNextMaxPlayerMoves();
+    void calculateNextMinPlayerMoves();
     Player checkVictory();
+    bool equals(GameState* s);
+    void copyFieldsTo(GameState* dest);
+    void setStateAtPos(Vector2 pos, FieldState s);
+    bool hasStateAtPos(Vector2 pos, FieldState s);
+    std::string info;
+};
+
+class Move
+{
+    public:
+    GameState* resulting;
+    Move* nextAlternative;
 };
 
 inline void GameState::copyFieldsTo(GameState* dest)
@@ -51,20 +68,37 @@ inline void GameState::copyFieldsTo(GameState* dest)
     }
 }
 
-inline bool GameState::isFieldPosValid(Vector2 pos)
+inline FieldState GameState::getStateAtPos(Vector2 pos)
 {
-    bool result = 
-        (pos.x >= 0) &&
-        (pos.y >= 0) &&
-        (pos.x < DIM) &&
-        (pos.y < DIM);
+    FieldState result = this->fields[pos.y][pos.x];
     
     return result;
 }
 
-inline Field* GameState::getFieldAtPos(Vector2 pos)
+inline bool GameState::equals(GameState* s)
 {
-    Field* result = &this->fields[pos.y][pos.x];
+    for (uint8_t col = 0; col < DIM; col++)
+    {
+        for (uint8_t row = 0; row < DIM; row++)
+        {
+            if (s->fields[col][row] != this->fields[col][row])
+            {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+inline void GameState::setStateAtPos(Vector2 pos, FieldState s)
+{
+    this->fields[pos.y][pos.x] = s;
+}
+
+inline bool GameState::hasStateAtPos(Vector2 pos, FieldState s)
+{
+    bool result = (this->fields[pos.y][pos.x] == s);
     
     return result;
 }

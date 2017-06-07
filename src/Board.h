@@ -4,22 +4,92 @@ const uint8_t DIM = 7;
 
 #include "Gamestate.h"
 
+class ZobristNode
+{
+    public:
+    ZobristNode* next = nullptr;
+    GameState state;
+};
+
+class ZobristEntryNode
+{
+    public:
+    ZobristNode* firstNode = nullptr;
+};
+
 class Board
 {
     private:
     static Vector2 thronePos;
-    int zobristValues[DIM][DIM][3];
     Board();
     
     public:
     GameState* state;
-    
-    int getZobristValue(Vector2 pos, uint8_t s);
+    // TODO(jan): is this the best place for this? 
+    // how large should the hash table be?
+    ZobristEntryNode zobristHashTable[UINT16_MAX + 1];
+    uint16_t zobristValues[DIM][DIM][3];
+    int roundCount = 0;
     
     static Board* getInstance();
     static bool isFieldPosTarget(Vector2 pos);
     static bool isFieldPosThrone(Vector2 pos);
+    static bool isFieldPosValid(Vector2 pos);
+    uint16_t getZobristValue(Vector2 pos, uint8_t s);
+    GameState* getGameState(uint16_t hash, GameState* s);
+    GameState* addGameState(uint16_t hash, GameState* s);
 };
+
+Vector2 Board::thronePos = {(int)(DIM/2), (int)(DIM/2)};
+
+inline bool Board::isFieldPosValid(Vector2 pos)
+{
+    bool result = 
+        (pos.x >= 0) &&
+        (pos.y >= 0) &&
+        (pos.x < DIM) &&
+        (pos.y < DIM);
+    
+    return result;
+}
+
+GameState* Board::getGameState(uint16_t hash, GameState* s)
+{
+    GameState* result = nullptr;
+    ZobristEntryNode e = this->zobristHashTable[hash];
+    ZobristNode* n = e.firstNode;
+    
+    while (n != nullptr) {
+        if (n->state.equals(s))
+        {
+            result = &n->state;
+            break;
+        }
+        
+        n = n->next;
+    };
+    
+    return result;
+}
+
+GameState* Board::addGameState(uint16_t hash, GameState* s)
+{
+    ZobristNode* n = new ZobristNode();
+    
+    s->copyFieldsTo(&n->state);
+    n->state.kingPos = s->kingPos;
+    n->state.zobristHash = hash;
+    n->state.info = "Added in round " + std::to_string(this->roundCount) + ".";
+    
+    ZobristEntryNode e = this->zobristHashTable[hash];
+    ZobristNode* n2 = e.firstNode;
+    n->next = n2;
+    e.firstNode = n;
+    
+    GameState* result = &n->state;
+    
+    return result;
+}
 
 Board::Board()
 {
@@ -45,23 +115,28 @@ Board* Board::getInstance()
     return instance;
 }
 
-inline int Board::getZobristValue(Vector2 pos, uint8_t s)
+inline uint16_t Board::getZobristValue(Vector2 pos, uint8_t s)
 {
-    int stateIndex;
-    if (s == FIELD_KING)
-    {
-        stateIndex = 0;
-    }
-    else if (s == FIELD_WHITE)
-    {
-        stateIndex = 1;
-    }
-    else if (s == FIELD_BLACK)
-    {
-        stateIndex = 2;
-    }
+    int result = 0;
     
-    int result = this->zobristValues[pos.y][pos.x][stateIndex];
+    if (s)
+    {
+        int stateIndex;
+        if (s == FIELD_KING)
+        {
+            stateIndex = 0;
+        }
+        else if (s == FIELD_WHITE)
+        {
+            stateIndex = 1;
+        }
+        else if (s == FIELD_BLACK)
+        {
+            stateIndex = 2;
+        }
+        
+        result = this->zobristValues[pos.y][pos.x][stateIndex];
+    }
     
     return result;
 }

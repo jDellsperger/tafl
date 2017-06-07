@@ -4,7 +4,6 @@
 #include <cstdlib>
 
 #include "Math.h"
-#include "Field.cpp"
 #include "Board.h"
 #include "Gamestate.cpp"
 
@@ -12,20 +11,20 @@ void initBrandubh(Board* b)
 {
     b->state = new GameState();
     
-    b->state->fields[0][3].setFlags(FIELD_BLACK);
-    b->state->fields[1][3].setFlags(FIELD_BLACK);
-    b->state->fields[5][3].setFlags(FIELD_BLACK);
-    b->state->fields[6][3].setFlags(FIELD_BLACK);
-    b->state->fields[3][0].setFlags(FIELD_BLACK);
-    b->state->fields[3][1].setFlags(FIELD_BLACK);
-    b->state->fields[3][5].setFlags(FIELD_BLACK);
-    b->state->fields[3][6].setFlags(FIELD_BLACK);
+    b->state->fields[0][3] = FIELD_BLACK;
+    b->state->fields[1][3] = FIELD_BLACK;
+    b->state->fields[5][3] = FIELD_BLACK;
+    b->state->fields[6][3] = FIELD_BLACK;
+    b->state->fields[3][0] = FIELD_BLACK;
+    b->state->fields[3][1] = FIELD_BLACK;
+    b->state->fields[3][5] = FIELD_BLACK;
+    b->state->fields[3][6] = FIELD_BLACK;
     
-    b->state->fields[3][2].setFlags(FIELD_WHITE);
-    b->state->fields[3][4].setFlags(FIELD_WHITE);
-    b->state->fields[2][3].setFlags(FIELD_WHITE);
-    b->state->fields[4][3].setFlags(FIELD_WHITE);
-    b->state->fields[3][3].setFlags(FIELD_KING);
+    b->state->fields[3][2] = FIELD_WHITE;
+    b->state->fields[3][4] = FIELD_WHITE;
+    b->state->fields[2][3] = FIELD_WHITE;
+    b->state->fields[4][3] = FIELD_WHITE;
+    b->state->fields[3][3] = FIELD_KING;
     
     b->state->kingPos = {3, 3};
     b->state->generateZobristHash();
@@ -34,12 +33,23 @@ void initBrandubh(Board* b)
 void initTest(Board* b)
 {
     b->state = new GameState();
-    b->state->fields[3][4].setFlags(FIELD_BLACK);
-    b->state->fields[4][3].setFlags(FIELD_BLACK);
-    b->state->fields[2][3].setFlags(FIELD_BLACK);
-    b->state->fields[2][2].setFlags(FIELD_BLACK);
+    b->state->fields[3][4] = FIELD_BLACK;
+    b->state->fields[4][3] = FIELD_BLACK;
+    b->state->fields[2][3] = FIELD_BLACK;
+    b->state->fields[2][2] = FIELD_BLACK;
     
-    b->state->fields[3][3].setFlags(FIELD_KING);
+    b->state->fields[3][3] = FIELD_KING;
+    
+    b->state->kingPos = {3, 3};
+    b->state->generateZobristHash();
+}
+
+void initTest2(Board* b)
+{
+    b->state = new GameState();
+    b->state->fields[2][2] = FIELD_BLACK;
+    
+    b->state->fields[3][3] = FIELD_KING;
     
     b->state->kingPos = {3, 3};
     b->state->generateZobristHash();
@@ -49,25 +59,82 @@ int main()
 {
     Board* b = Board::getInstance();
     initBrandubh(b);
-    //initTest(b);
+    //initTest2(b);
+    
+    b->state->draw();
     
     Player activePlayer = PLAYER_MAX;
     Player inactivePlayer = PLAYER_MIN;
     
     char s = 'n';
-    uint32_t moveCount = 0;
     while (s != 'c')
     {
-        std::cout << "------------------" << std::endl;
+        s = getchar();
+        
+        b->roundCount++;
+        
+        b->state->minimax(4, activePlayer);
+        GameState* candidate = nullptr;
         
         if (activePlayer == PLAYER_MAX)
         {
-            std::cout << "max player active" << std::endl;
+            Move* m = b->state->firstMaxPlayerMove;
+            
+            if (m != nullptr) {
+                candidate = m->resulting;
+                
+                while (m)
+                {
+                    GameState* s = m->resulting;
+                    if (s->val > candidate->val)
+                    {
+                        candidate = s;
+                    }
+                    
+                    m = m->nextAlternative;
+                }
+            }
+            else
+            {
+                std::cout << "No more moves..." << std::endl;
+                getchar();
+                break;
+            }
         }
         else
         {
-            std::cout << "min player active" << std::endl;
+            Move* m = b->state->firstMinPlayerMove;
+            
+            if (m != nullptr) {
+                candidate = m->resulting;
+                
+                while (m)
+                {
+                    GameState* s = m->resulting;
+                    if (s->val < candidate->val)
+                    {
+                        candidate = s;
+                    }
+                    
+                    m = m->nextAlternative;
+                }
+            }
+            else
+            {
+                std::cout << "No more moves..." << std::endl;
+                getchar();
+                break;
+            }
         }
+        
+        b->state = candidate;
+        Player tempPlayer = activePlayer;
+        activePlayer = inactivePlayer;
+        inactivePlayer = tempPlayer;
+        
+        std::cout << "------------------" << std::endl;
+        std::cout << "Round " + std::to_string(b->roundCount) + ":" 
+            << std::endl << std::endl;
         
         b->state->draw();
         
@@ -85,56 +152,21 @@ int main()
             break;
         }
         
-        b->state->minimax(4, activePlayer);
         std::cout << "Minimax value: " << b->state->val << std::endl;
         std::cout << "King position: ";
         draw(b->state->kingPos);
-        std::cout << std::endl;
         
         std::cout << "Zobrist hash: " << b->state->zobristHash << std::endl;
+        std::cout << b->state->info << std::endl;
         
-        if (moveCount >= b->state->childCount)
+        if (activePlayer == PLAYER_MAX)
         {
-            moveCount = 0;
-        }
-        
-        GameState* next = b->state->firstChild;
-        GameState* candidate = next;
-        if (next != nullptr) {
-            for (uint32_t i = 0; i < b->state->childCount; i++)
-            {
-                if (activePlayer == PLAYER_MAX)
-                {
-                    if (next->val > candidate->val)
-                    {
-                        candidate = next;
-                    }
-                }
-                else
-                {
-                    if (next->val < candidate->val)
-                    {
-                        candidate = next;
-                    }
-                }
-                
-                next = next->nextSibling;
-            }
+            std::cout << "Max Player moves next" << std::endl;
         }
         else
         {
-            std::cout << "No more moves..." << std::endl;
-            getchar();
-            break;
+            std::cout << "Min Player moves next" << std::endl;
         }
-        
-        b->state = candidate;
-        Player tempPlayer = activePlayer;
-        activePlayer = inactivePlayer;
-        inactivePlayer = tempPlayer;
-        moveCount++;
-        
-        s = getchar();
     }
     
     return 0;
