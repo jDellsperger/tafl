@@ -1,6 +1,12 @@
 #ifndef BOARD_H
 
 const uint8_t DIM = 7;
+const Vector2 DIRECTIONS[4] = {
+    {0, 1},
+    {0, -1},
+    {1, 0},
+    {-1, 0}
+};
 
 #include "Gamestate.h"
 
@@ -21,7 +27,10 @@ class Board
 {
     private:
     static Vector2 thronePos;
+    
     Board();
+    GameState* getGameState(GameState* s);
+    GameState* addGameState(GameState* s);
     
     public:
     GameState* state;
@@ -36,11 +45,8 @@ class Board
     static bool isFieldPosThrone(Vector2 pos);
     static bool isFieldPosValid(Vector2 pos);
     uint16_t getZobristValue(Vector2 pos, uint8_t s);
-    GameState* getGameState(uint16_t hash, GameState* s);
-    GameState* addGameState(uint16_t hash, GameState* s);
+    GameState* getZobristAddress(GameState* s);
 };
-
-Vector2 Board::thronePos = {(int)(DIM/2), (int)(DIM/2)};
 
 inline bool Board::isFieldPosValid(Vector2 pos)
 {
@@ -49,94 +55,6 @@ inline bool Board::isFieldPosValid(Vector2 pos)
         (pos.y >= 0) &&
         (pos.x < DIM) &&
         (pos.y < DIM);
-    
-    return result;
-}
-
-GameState* Board::getGameState(uint16_t hash, GameState* s)
-{
-    GameState* result = nullptr;
-    ZobristEntryNode e = this->zobristHashTable[hash];
-    ZobristNode* n = e.firstNode;
-    
-    while (n != nullptr) {
-        if (n->state.equals(s))
-        {
-            result = &n->state;
-            break;
-        }
-        
-        n = n->next;
-    };
-    
-    return result;
-}
-
-GameState* Board::addGameState(uint16_t hash, GameState* s)
-{
-    ZobristNode* n = new ZobristNode();
-    
-    s->copyFieldsTo(&n->state);
-    n->state.kingPos = s->kingPos;
-    n->state.zobristHash = hash;
-    n->state.info = "Added in round " + std::to_string(this->roundCount) + ".";
-    
-    ZobristEntryNode e = this->zobristHashTable[hash];
-    ZobristNode* n2 = e.firstNode;
-    n->next = n2;
-    e.firstNode = n;
-    
-    GameState* result = &n->state;
-    
-    return result;
-}
-
-Board::Board()
-{
-    this->state = new GameState();
-    
-    for (int i = 0; i < DIM; i++)
-    {
-        for (int j = 0; j < DIM; j++)
-        {
-            for (int k = 0; k < 3; k++)
-            {
-                this->zobristValues[i][j][k] = rand();
-            }
-        }
-    }
-}
-
-Board* Board::getInstance()
-{
-    
-    static Board* instance = new Board();
-    
-    return instance;
-}
-
-inline uint16_t Board::getZobristValue(Vector2 pos, uint8_t s)
-{
-    int result = 0;
-    
-    if (s)
-    {
-        int stateIndex;
-        if (s == FIELD_KING)
-        {
-            stateIndex = 0;
-        }
-        else if (s == FIELD_WHITE)
-        {
-            stateIndex = 1;
-        }
-        else if (s == FIELD_BLACK)
-        {
-            stateIndex = 2;
-        }
-        
-        result = this->zobristValues[pos.y][pos.x][stateIndex];
-    }
     
     return result;
 }

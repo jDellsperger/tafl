@@ -4,7 +4,7 @@
 #include <cstdlib>
 
 #include "Math.h"
-#include "Board.h"
+#include "Board.cpp"
 #include "Gamestate.cpp"
 
 void initBrandubh(Board* b)
@@ -58,8 +58,8 @@ void initTest2(Board* b)
 int main()
 {
     Board* b = Board::getInstance();
-    //initBrandubh(b);
-    initTest2(b);
+    initBrandubh(b);
+    //initTest2(b);
     
     b->state->draw();
     
@@ -158,7 +158,7 @@ int main()
         
         std::cout << "Zobrist hash: " << b->state->zobristHash << std::endl;
         std::cout << b->state->info << std::endl;
-		std::cout << "Hopcount: " << std::to_string(b->state->calcHops()) << std::endl;
+        std::cout << "Hopcount: " << std::to_string(b->state->calcHops()) << std::endl;
         
         if (activePlayer == PLAYER_MAX)
         {

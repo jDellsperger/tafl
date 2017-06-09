@@ -44,18 +44,73 @@ void GameState::draw()
     std::cout << std::endl;
 }
 
+void GameState::setStateAtPos(Vector2 pos, FieldState s, Board* b)
+{
+    // Update zobrist hash by XOR-ing old value out
+    FieldState oldState = this->fields[pos.y][pos.x];
+    uint16_t oldZobristVal = b->getZobristValue(pos, oldState);
+    this->zobristHash ^= oldZobristVal;
+    
+    // Set new state
+    this->fields[pos.y][pos.x] = s;
+    
+    // Update zobrist hash by XOR-ing new value in
+    uint16_t newZobristVal = b->getZobristValue(pos, s);
+    this->zobristHash ^= newZobristVal;
+}
+
+void GameState::addMinPlayerMove(GameState* resulting)
+{
+    Move* m = new Move();
+    m->resulting = resulting;
+    m->nextAlternative = this->firstMinPlayerMove;
+    this->firstMinPlayerMove = m;
+    
+    this->minPlayerMoveCount++;
+}
+
+void GameState::addMaxPlayerMove(GameState* resulting)
+{
+    Move* m = new Move();
+    m->resulting = resulting;
+    m->nextAlternative = this->firstMaxPlayerMove;
+    this->firstMaxPlayerMove = m;
+    
+    this->maxPlayerMoveCount++;
+}
+
+// Tests if there is a capture situation present for a given position
+// allyState can be multiple FieldStates OR-ed together.
+void GameState::testCaptureAtPos(Vector2 pos,
+                                 uint8_t allyState, 
+                                 FieldState enemyState, 
+                                 Board* b)
+{
+    for (int capDirIndex = 0; capDirIndex < 4; capDirIndex++)
+    {
+        Vector2 capDir = DIRECTIONS[capDirIndex];
+        Vector2 allyPos = add(pos, scalarMultiply(capDir, 2));
+        
+        if (Board::isFieldPosValid(allyPos))
+        {
+            Vector2 enemyPos = add(pos, capDir);
+            
+            if (this->hasStateAtPos(enemyPos, enemyState))
+            {
+                if (this->getStateAtPos(allyPos) & allyState)
+                {
+                    this->setStateAtPos(enemyPos, FIELD_EMPTY, b);
+                }
+            }
+        }
+    }
+}
+
 void GameState::calculateNextMaxPlayerMoves()
 {
     Board* b = Board::getInstance();
     
     // TODO(jan): only do this if next max player moves have not yet been calculated!
-    // TODO(jan): extract this somewhere useful
-    Vector2 directions[] = {
-        {0, 1},
-        {0, -1},
-        {1, 0},
-        {-1, 0}
-    };
     
     // Iterate over all fields to find black tokens
     for (uint8_t col = 0; col < DIM; col++)
@@ -71,7 +126,7 @@ void GameState::calculateNextMaxPlayerMoves()
                 for (int moveDirIndex = 0; moveDirIndex < 4; moveDirIndex++)
                 { 
                     // Direction we are testing in
-                    Vector2 moveDir = directions[moveDirIndex];
+                    Vector2 moveDir = DIRECTIONS[moveDirIndex];
                     // Position the token ends up in
                     Vector2 endPos = add(startPos, moveDir);
                     
@@ -92,72 +147,17 @@ void GameState::calculateNextMaxPlayerMoves()
                             resulting.kingPos = this->kingPos;
                             resulting.zobristHash = this->zobristHash;
                             
-                            // Remove token from start position
-                            resulting.setStateAtPos(startPos, FIELD_EMPTY);
+                            // Move token from start to end pos
+                            resulting.setStateAtPos(startPos, FIELD_EMPTY, b);
+                            resulting.setStateAtPos(endPos, FIELD_BLACK, b);
                             
-                            // XOR out the token at the start position from hash
-                            uint16_t zStartVal = b->getZobristValue(startPos, FIELD_BLACK);
-                            resulting.zobristHash ^= zStartVal;
+                            resulting.testCaptureAtPos(endPos, FIELD_BLACK, FIELD_WHITE, b);
                             
-                            // Add token to end position
-                            resulting.setStateAtPos(endPos, FIELD_BLACK);
+                            // Get resulting gamestate from zobrist hash table
+                            GameState* existing = b->getZobristAddress(&resulting);
                             
-                            // XOR in the token at the end position to hash
-                            uint16_t zEndVal = b->getZobristValue(endPos, FIELD_BLACK);
-                            resulting.zobristHash ^= zEndVal;
-                            
-                            // Test if an enemy token was captured
-                            for (int capDirIndex = 0; capDirIndex < 4; capDirIndex++)
-                            {
-                                // The direction we are testing a capture in
-                                Vector2 capDir = directions[capDirIndex];
-                                // The position where an ally should be for a capture
-                                Vector2 allyPos = add(endPos, scalarMultiply(capDir, 2));
-                                
-                                // Check if the ally position is valid
-                                if (Board::isFieldPosValid(allyPos))
-                                {
-                                    // The position captured if there is an enemy and the Field
-                                    // (this is always valid since the allyPos is farther away)
-                                    Vector2 enemyPos = add(endPos, capDir);
-                                    
-                                    // Test if there actually is an enemy
-                                    if (resulting.hasStateAtPos(enemyPos, FIELD_WHITE))
-                                    {
-                                        // Test if there actually is an ally
-                                        if (resulting.hasStateAtPos(allyPos, FIELD_BLACK))
-                                        {
-                                            // Remove the captured enemy
-                                            resulting.setStateAtPos(enemyPos, FIELD_EMPTY);
-                                            
-                                            // XOR out the enemy from hash
-                                            uint16_t zEnemyVal = b->getZobristValue(enemyPos, 
-                                                                                    FIELD_WHITE);
-                                            resulting.zobristHash ^= zEnemyVal;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // See if the resulting gamestate already 
-                            // exists in zobrist hash table. If not,
-                            // add it.
-                            GameState* existing = b->getGameState(resulting.zobristHash,
-                                                                  &resulting);
-                            if (!existing)
-                            {
-                                existing = b->addGameState(resulting.zobristHash,
-                                                           &resulting);
-                            }
-                            
-                            // Add the resulting gamestate to the possible max player 
-                            // moves of the current one
-                            Move* m = new Move();
-                            m->resulting = existing;
-                            m->nextAlternative = this->firstMaxPlayerMove;
-                            this->firstMaxPlayerMove = m;
-                            
-                            this->maxPlayerMoveCount++;
+                            // Add the resulting gamestate to possible moves
+                            this->addMaxPlayerMove(existing);
                         }
                         
                         endPos.add(moveDir);
@@ -175,13 +175,6 @@ void GameState::calculateNextMinPlayerMoves()
     Board* b = Board::getInstance();
     
     // TODO(jan): only do this if next min player moves have not yet been calculated!
-    // TODO(jan): extract this somewhere useful
-    Vector2 directions[] = {
-        {0, 1},
-        {0, -1},
-        {1, 0},
-        {-1, 0}
-    };
     
     // Iterate over all fields to find white tokens
     for (uint8_t col = 0; col < DIM; col++)
@@ -197,7 +190,7 @@ void GameState::calculateNextMinPlayerMoves()
                 for (int moveDirIndex = 0; moveDirIndex < 4; moveDirIndex++)
                 {
                     // Direction we are testing in
-                    Vector2 moveDir = directions[moveDirIndex];
+                    Vector2 moveDir = DIRECTIONS[moveDirIndex];
                     // Position the token ends up in
                     Vector2 endPos = add(startPos, moveDir);
                     
@@ -218,73 +211,20 @@ void GameState::calculateNextMinPlayerMoves()
                             resulting.kingPos = this->kingPos;
                             resulting.zobristHash = this->zobristHash;
                             
-                            // Remove token from start position
-                            resulting.setStateAtPos(startPos, FIELD_EMPTY);
+                            // Move token from start to end
+                            resulting.setStateAtPos(startPos, FIELD_EMPTY, b);
+                            resulting.setStateAtPos(endPos, FIELD_WHITE, b);
                             
-                            // XOR out the token at the start position from hash
-                            uint16_t zStartVal = b->getZobristValue(startPos, FIELD_WHITE);
-                            resulting.zobristHash ^= zStartVal;
+                            // Test if an enemy was captured
+                            resulting.testCaptureAtPos(endPos, 
+                                                       (FIELD_WHITE | FIELD_KING),
+                                                       FIELD_BLACK, b);
                             
-                            // Add token to end position
-                            resulting.setStateAtPos(endPos, FIELD_WHITE);
+                            // Get resulting gamestate from zobrist hash table
+                            GameState* existing = b->getZobristAddress(&resulting);
                             
-                            // XOR in the token at the end position to hash
-                            uint16_t zEndVal = b->getZobristValue(endPos, FIELD_WHITE);
-                            resulting.zobristHash ^= zEndVal;
-                            
-                            // Test if an enemy token was captured
-                            for (int capDirIndex = 0; capDirIndex < 4; capDirIndex++)
-                            {
-                                // The direction we are testing a capture in
-                                Vector2 capDir = directions[capDirIndex];
-                                // The position where an ally should be for a capture
-                                Vector2 allyPos = add(endPos, scalarMultiply(capDir, 2));
-                                
-                                // Check if the ally position is valid
-                                if (Board::isFieldPosValid(allyPos))
-                                {
-                                    // The position captured if there is an enemy and the Field
-                                    // (this is always valid since the allyPos is farther away)
-                                    Vector2 enemyPos = add(endPos, capDir);
-                                    
-                                    // Test if there actually is an enemy
-                                    if (resulting.hasStateAtPos(enemyPos, FIELD_BLACK))
-                                    {
-                                        // Test if there actually is an ally
-                                        if (resulting.hasStateAtPos(allyPos, FIELD_WHITE) ||
-                                            resulting.hasStateAtPos(allyPos, FIELD_KING))
-                                        {
-                                            // Remove the captured enemy
-                                            resulting.setStateAtPos(enemyPos, FIELD_EMPTY);
-                                            
-                                            // XOR out the enemy from hash
-                                            uint16_t zEnemyVal = b->getZobristValue(enemyPos, 
-                                                                                    FIELD_BLACK);
-                                            resulting.zobristHash ^= zEnemyVal;
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            // See if the resulting gamestate already 
-                            // exists in zobrist hash table. If not,
-                            // add it.
-                            GameState* existing = b->getGameState(resulting.zobristHash,
-                                                                  &resulting);
-                            if (!existing)
-                            {
-                                existing = b->addGameState(resulting.zobristHash,
-                                                           &resulting);
-                            }
-                            
-                            // Add the resulting gamestate to the possible max player 
-                            // moves of the current one
-                            Move* m = new Move();
-                            m->resulting = existing;
-                            m->nextAlternative = this->firstMinPlayerMove;
-                            this->firstMinPlayerMove = m;
-                            
-                            this->minPlayerMoveCount++;
+                            // Add the resulting gamestate to possible moves
+                            this->addMinPlayerMove(existing);
                         }
                         
                         endPos.add(moveDir);
@@ -296,7 +236,7 @@ void GameState::calculateNextMinPlayerMoves()
                 for (int moveDirIndex = 0; moveDirIndex < 4; moveDirIndex++)
                 {
                     // Direction we are testing in
-                    Vector2 moveDir = directions[moveDirIndex];
+                    Vector2 moveDir = DIRECTIONS[moveDirIndex];
                     // Position the token ends up in
                     Vector2 endPos = add(startPos, moveDir);
                     
@@ -317,71 +257,19 @@ void GameState::calculateNextMinPlayerMoves()
                             resulting.zobristHash = this->zobristHash;
                             
                             // Remove token from start position
-                            resulting.setStateAtPos(startPos, FIELD_EMPTY);
-                            
-                            // XOR out the token at the start position from hash
-                            uint16_t zStartVal = b->getZobristValue(startPos, FIELD_KING);
-                            resulting.zobristHash ^= zStartVal;
+                            resulting.setStateAtPos(startPos, FIELD_EMPTY, b);
                             
                             // Add token to end position
-                            resulting.setStateAtPos(endPos, FIELD_KING);
-                            
-                            // XOR in the token at the end position to hash
-                            uint16_t zEndVal = b->getZobristValue(endPos, FIELD_KING);
-                            resulting.zobristHash ^= zEndVal;
+                            resulting.setStateAtPos(endPos, FIELD_KING, b);
                             
                             // Test if an enemy token was captured
-                            for (int capDirIndex = 0; capDirIndex < 4; capDirIndex++)
-                            {
-                                // The direction we are testing a capture in
-                                Vector2 capDir = directions[capDirIndex];
-                                // The position where an ally should be for a capture
-                                Vector2 allyPos = add(endPos, scalarMultiply(capDir, 2));
-                                
-                                // Check if the ally position is valid
-                                if (Board::isFieldPosValid(allyPos))
-                                {
-                                    // The position captured if there is an enemy
-                                    // (this is always valid since the allyPos is farther away)
-                                    Vector2 enemyPos = add(endPos, capDir);
-                                    
-                                    // Test if there actually is an enemy
-                                    if (resulting.hasStateAtPos(enemyPos, FIELD_BLACK))
-                                    {
-                                        // Test if there actually is an ally
-                                        if (resulting.hasStateAtPos(allyPos, FIELD_WHITE))
-                                        {
-                                            // Remove the captured enemy
-                                            resulting.setStateAtPos(enemyPos, FIELD_EMPTY);
-                                            
-                                            // XOR out the enemy from hash
-                                            uint16_t zEnemyVal = b->getZobristValue(enemyPos, 
-                                                                                    FIELD_BLACK);
-                                            resulting.zobristHash ^= zEnemyVal;
-                                        }
-                                    }
-                                }
-                            }
+                            resulting.testCaptureAtPos(endPos, FIELD_WHITE, FIELD_BLACK, b);
                             
-                            // See if the resulting gamestate already 
-                            // exists in zobrist hash table. If not,
-                            // add it.
-                            GameState* existing = b->getGameState(resulting.zobristHash,
-                                                                  &resulting);
-                            if (!existing)
-                            {
-                                existing = b->addGameState(resulting.zobristHash,
-                                                           &resulting);
-                            }
+                            // Get resulting gamestate from zobrist hash table
+                            GameState* existing = b->getZobristAddress(&resulting);
                             
-                            // Add the resulting gamestate to the possible max player 
-                            // moves of the current one
-                            Move* m = new Move();
-                            m->resulting = existing;
-                            m->nextAlternative = this->firstMinPlayerMove;
-                            this->firstMinPlayerMove = m;
-                            
-                            this->minPlayerMoveCount++;
+                            // Add the resulting gamestate to possible moves
+                            this->addMinPlayerMove(existing);
                         }
                         
                         endPos.add(moveDir);
@@ -590,120 +478,113 @@ void GameState::generateZobristHash()
 
 int GameState::calcHops()
 {
-	Vector2 directions[] = {
-		{ 0, 1 },
-		{ 0, -1 },
-		{ 1, 0 },
-		{ -1, 0 }
-	};
-
-	GraphVertex graph[DIM][DIM];
-
-	for (int y = 0; y < DIM; y++)
-	{
-		for (int x = 0; x < DIM; x++)
-		{
-			GraphVertex* v = &graph[y][x];
-			v->index = y * DIM + x;
-
-			for (int i = 0; i < 4; i++)
-			{
-				Vector2 p = { x,y };
-				Vector2 dir = directions[i];
-				p.add(dir);
-
-				while (Board::isFieldPosValid(p))
-				{
-					FieldState s=  this->getStateAtPos(p);
-
-					if (s != FIELD_EMPTY)
-					{
-						break;
-					}
-				
-					else if (!Board::isFieldPosThrone(p))
-					{
-						v->edges[v->edgeCount] = &graph[p.y][p.x];
-						v->edgeCount++;
-					}
-
-					p.add(dir);
-				}
-			}
-		}
-	}
-
-	GraphVertex* queue[DIM * DIM];
-	queue[0] = &graph[this->kingPos.y][this->kingPos.x];
-	int queueCount = 1;
-	int queueIndex = 0;
-	int visitedFrom[DIM * DIM];
-	for (int i = 0; i < DIM * DIM; i++)
-	{
-		visitedFrom[i] = -1;
-	}
-
-	int reachedTargetIndex = -1;
-
-	int targetIndices[4] = {
-		0, DIM - 1, DIM * (DIM - 1), (DIM * DIM) - 1
-	};
-
-	while (queueCount)
-	{
-		GraphVertex* v = queue[queueIndex];
-
-		for (int i = 0; i < v->edgeCount; i++) {
-			GraphVertex* u = v->edges[i];
-
-			if (visitedFrom[u->index] < 0)
-			{
-				queue[queueIndex + queueCount] = u;
-				visitedFrom[u->index] = v->index;
-
-				for (int t = 0; t < 4; t++)
-				{
-					int targetIndex = targetIndices[t];
-					if (u->index == targetIndex)
-					{
-						reachedTargetIndex = u->index;
-						break;
-					}
-				}
-
-				queueCount++;
-			}
-
-			if (reachedTargetIndex >= 0)
-			{
-				break;
-			}
-		}
-
-		if (reachedTargetIndex >= 0)
-		{
-			break;
-		}
-
-		queueCount--;
-		queueIndex++;
-	}
-
-	int result = -1;
-	if (reachedTargetIndex >= 0)
-	{
-		int hopCount = 0;
-		int nextHopIndex = reachedTargetIndex;
-		int kingPosIndex = this->kingPos.y * DIM + this->kingPos.x;
-
-		while (nextHopIndex != kingPosIndex)
-		{
-			hopCount++;
-			nextHopIndex = visitedFrom[nextHopIndex];
-		}
-
-		result = hopCount;
-	}
-
-	return result;
+    GraphVertex graph[DIM][DIM];
+    
+    for (int16_t y = 0; y < DIM; y++)
+    {
+        for (int16_t x = 0; x < DIM; x++)
+        {
+            GraphVertex* v = &graph[y][x];
+            v->index = y * DIM + x;
+            
+            for (int i = 0; i < 4; i++)
+            {
+                Vector2 p = { x,y };
+                Vector2 dir = DIRECTIONS[i];
+                p.add(dir);
+                
+                while (Board::isFieldPosValid(p))
+                {
+                    FieldState s=  this->getStateAtPos(p);
+                    
+                    if (s != FIELD_EMPTY)
+                    {
+                        break;
+                    }
+                    
+                    else if (!Board::isFieldPosThrone(p))
+                    {
+                        v->edges[v->edgeCount] = &graph[p.y][p.x];
+                        v->edgeCount++;
+                    }
+                    
+                    p.add(dir);
+                }
+            }
+        }
+    }
+    
+    GraphVertex* queue[DIM * DIM];
+    queue[0] = &graph[this->kingPos.y][this->kingPos.x];
+    int queueCount = 1;
+    int queueIndex = 0;
+    int visitedFrom[DIM * DIM];
+    for (int i = 0; i < DIM * DIM; i++)
+    {
+        visitedFrom[i] = -1;
+    }
+    
+    int reachedTargetIndex = -1;
+    
+    int targetIndices[4] = {
+        0, DIM - 1, DIM * (DIM - 1), (DIM * DIM) - 1
+    };
+    
+    while (queueCount)
+    {
+        GraphVertex* v = queue[queueIndex];
+        
+        for (int i = 0; i < v->edgeCount; i++) {
+            GraphVertex* u = v->edges[i];
+            
+            if (visitedFrom[u->index] < 0)
+            {
+                queue[queueIndex + queueCount] = u;
+                visitedFrom[u->index] = v->index;
+                
+                for (int t = 0; t < 4; t++)
+                {
+                    int targetIndex = targetIndices[t];
+                    if (u->index == targetIndex)
+                    {
+                        reachedTargetIndex = u->index;
+                        break;
+                    }
+                }
+                
+                queueCount++;
+            }
+            
+            if (reachedTargetIndex >= 0)
+            {
+                break;
+            }
+        }
+        
+        if (reachedTargetIndex >= 0)
+        {
+            break;
+        }
+        
+        queueCount--;
+        queueIndex++;
+    }
+    
+    int result = -1;
+    if (reachedTargetIndex >= 0)
+    {
+        int hopCount = 0;
+        int nextHopIndex = reachedTargetIndex;
+        int kingPosIndex = this->kingPos.y * DIM + this->kingPos.x;
+        
+        while (nextHopIndex != kingPosIndex)
+        {
+            hopCount++;
+            nextHopIndex = visitedFrom[nextHopIndex];
+        }
+        
+        result = hopCount;
+    }
+    
+    return result;
 }

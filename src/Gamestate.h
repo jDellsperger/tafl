@@ -8,7 +8,7 @@ enum Player
     PLAYER_MIN = 2
 };
 
-enum FieldState
+enum FieldState : uint8_t
 {
     FIELD_EMPTY = 0,
     FIELD_KING = 1,
@@ -17,12 +17,18 @@ enum FieldState
 };
 
 class Move;
+class Board;
 
 class GameState
 {
     private:
     FieldState getStateAtPos(Vector2 pos);
     int16_t calcQuadrantValue(Vector2 kingPos, Vector2 tPos);
+    void setStateAtPos(Vector2 pos, FieldState s, Board* b);
+    void addMinPlayerMove(GameState* resulting);
+    void addMaxPlayerMove(GameState* resulting);
+    void testCaptureAtPos(Vector2 pos, uint8_t allyState, 
+                          FieldState enemyState, Board* b);
     
     public:
     uint16_t zobristHash;
@@ -45,18 +51,17 @@ class GameState
     Player checkVictory();
     bool equals(GameState* s);
     void copyFieldsTo(GameState* dest);
-    void setStateAtPos(Vector2 pos, FieldState s);
     bool hasStateAtPos(Vector2 pos, FieldState s);
     std::string info;
-	int calcHops();
+    int calcHops();
 };
 
 class GraphVertex
 {
-	public:
-	GraphVertex* edges[2*(DIM-1)];
-	int edgeCount = 0;
-	int index;
+    public:
+    GraphVertex* edges[2*(DIM-1)];
+    int edgeCount = 0;
+    int index;
 };
 
 class Move
@@ -77,13 +82,6 @@ inline void GameState::copyFieldsTo(GameState* dest)
     }
 }
 
-inline FieldState GameState::getStateAtPos(Vector2 pos)
-{
-    FieldState result = this->fields[pos.y][pos.x];
-    
-    return result;
-}
-
 inline bool GameState::equals(GameState* s)
 {
     for (uint8_t col = 0; col < DIM; col++)
@@ -100,9 +98,11 @@ inline bool GameState::equals(GameState* s)
     return true;
 }
 
-inline void GameState::setStateAtPos(Vector2 pos, FieldState s)
+inline FieldState GameState::getStateAtPos(Vector2 pos)
 {
-    this->fields[pos.y][pos.x] = s;
+    FieldState result = this->fields[pos.y][pos.x];
+    
+    return result;
 }
 
 inline bool GameState::hasStateAtPos(Vector2 pos, FieldState s)
