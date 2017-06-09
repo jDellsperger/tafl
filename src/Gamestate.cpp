@@ -587,3 +587,123 @@ void GameState::generateZobristHash()
     
     this->zobristHash = hash;
 }
+
+int GameState::calcHops()
+{
+	Vector2 directions[] = {
+		{ 0, 1 },
+		{ 0, -1 },
+		{ 1, 0 },
+		{ -1, 0 }
+	};
+
+	GraphVertex graph[DIM][DIM];
+
+	for (int y = 0; y < DIM; y++)
+	{
+		for (int x = 0; x < DIM; x++)
+		{
+			GraphVertex* v = &graph[y][x];
+			v->index = y * DIM + x;
+
+			for (int i = 0; i < 4; i++)
+			{
+				Vector2 p = { x,y };
+				Vector2 dir = directions[i];
+				p.add(dir);
+
+				while (Board::isFieldPosValid(p))
+				{
+					FieldState s=  this->getStateAtPos(p);
+
+					if (s != FIELD_EMPTY)
+					{
+						break;
+					}
+				
+					else if (!Board::isFieldPosThrone(p))
+					{
+						v->edges[v->edgeCount] = &graph[p.y][p.x];
+						v->edgeCount++;
+					}
+
+					p.add(dir);
+				}
+			}
+		}
+	}
+
+	GraphVertex* queue[DIM * DIM];
+	queue[0] = &graph[this->kingPos.y][this->kingPos.x];
+	int queueCount = 1;
+	int queueIndex = 0;
+	int visitedFrom[DIM * DIM];
+	for (int i = 0; i < DIM * DIM; i++)
+	{
+		visitedFrom[i] = -1;
+	}
+
+	int reachedTargetIndex = -1;
+
+	int targetIndices[4] = {
+		0, DIM - 1, DIM * (DIM - 1), (DIM * DIM) - 1
+	};
+
+	while (queueCount)
+	{
+		GraphVertex* v = queue[queueIndex];
+
+		for (int i = 0; i < v->edgeCount; i++) {
+			GraphVertex* u = v->edges[i];
+
+			if (visitedFrom[u->index] < 0)
+			{
+				queue[queueIndex + queueCount] = u;
+				visitedFrom[u->index] = v->index;
+
+				for (int t = 0; t < 4; t++)
+				{
+					int targetIndex = targetIndices[t];
+					if (u->index == targetIndex)
+					{
+						reachedTargetIndex = u->index;
+						break;
+					}
+				}
+
+				queueCount++;
+			}
+
+			if (reachedTargetIndex >= 0)
+			{
+				break;
+			}
+		}
+
+		if (reachedTargetIndex >= 0)
+		{
+			break;
+		}
+
+		queueCount--;
+		queueIndex++;
+	}
+
+	int result = -1;
+	if (reachedTargetIndex >= 0)
+	{
+		int hopCount = 0;
+		int nextHopIndex = reachedTargetIndex;
+		int kingPosIndex = this->kingPos.y * DIM + this->kingPos.x;
+
+		while (nextHopIndex != kingPosIndex)
+		{
+			hopCount++;
+			nextHopIndex = visitedFrom[nextHopIndex];
+		}
+
+		result = hopCount;
+	}
+
+	return result;
+}

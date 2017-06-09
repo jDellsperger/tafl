@@ -48,6 +48,15 @@ class GameState
     void setStateAtPos(Vector2 pos, FieldState s);
     bool hasStateAtPos(Vector2 pos, FieldState s);
     std::string info;
+	int calcHops();
+};
+
+class GraphVertex
+{
+	public:
+	GraphVertex* edges[2*(DIM-1)];
+	int edgeCount = 0;
+	int index;
 };
 
 class Move
