@@ -73,7 +73,8 @@ int main()
         
         b->roundCount++;
         
-        b->state->minimax(4, activePlayer);
+        //b->state->minimax(4, activePlayer);
+        b->state->abPruning(5, activePlayer, -100, 100);
         GameState* candidate = nullptr;
         
         if (activePlayer == PLAYER_MAX)

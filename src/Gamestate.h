@@ -45,6 +45,7 @@ class GameState
     void generateZobristHash();
     void draw();
     void minimax(int cutoff, Player player);
+    void abPruning(int cutOff, Player player, int alpha, int beta);
     int16_t evaluate();
     void calculateNextMaxPlayerMoves();
     void calculateNextMinPlayerMoves();

@@ -383,6 +383,83 @@ Player GameState::checkVictory()
     return victor;
 }
 
+void GameState::abPruning(int cutOff, Player player, int alpha, int beta)
+{
+    if (cutOff > 0)
+    {
+        cutOff--;
+        
+        if (player == PLAYER_MAX)
+        {
+            if (!this->maxPlayerMovesCalculated)
+            {
+                this->calculateNextMaxPlayerMoves();
+            }
+            
+            if (this->maxPlayerMoveCount > 0)
+            {
+                Move* m = this->firstMaxPlayerMove;
+                while (m != nullptr)
+                {
+                    GameState* s = m->resulting;
+                    s->abPruning(cutOff, PLAYER_MIN, alpha, beta);
+                    
+                    if (alpha < s->val)
+                    {
+                        alpha = s->val;
+                    }
+                    
+                    if (alpha >= beta)
+                    {
+                        this->val = beta;
+                        return;
+                    }
+                    
+                    m = m->nextAlternative;
+                }
+                
+                this->val = alpha;
+                return;
+            }
+        }
+        else
+        {
+            if (!this->minPlayerMovesCalculated)
+            {
+                this->calculateNextMinPlayerMoves();
+            }
+            
+            if (this->minPlayerMoveCount > 0)
+            {
+                Move* m = this->firstMinPlayerMove;
+                while (m != nullptr)
+                {
+                    GameState* s = m->resulting;
+                    s->abPruning(cutOff, PLAYER_MAX, alpha, beta);
+                    
+                    if (beta > s->val)
+                    {
+                        beta = s->val;
+                    }
+                    
+                    if (alpha >= beta)
+                    {
+                        this->val = alpha;
+                        return;
+                    }
+                    
+                    m = m->nextAlternative;
+                }
+                
+                this->val = beta;
+                return;
+            }
+        }
+    }
+    
+    this->val = this->evaluate();
+}
+
 void GameState::minimax(int cutOff, Player player)
 {
     // If cut-off depth is reached, return own value
