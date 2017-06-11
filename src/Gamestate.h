@@ -5,7 +5,8 @@ enum Player
 {
     PLAYER_NONE = 0,
     PLAYER_MAX = 1,
-    PLAYER_MIN = 2
+    PLAYER_MIN = 2,
+    PLAYER_BOTH = 3
 };
 
 enum FieldState : uint8_t
@@ -41,6 +42,8 @@ class GameState
     Vector2 kingPos = {};
     bool maxPlayerMovesCalculated = false;
     bool minPlayerMovesCalculated = false;
+    uint8_t repetitionCount = 0;
+    std::string info;
     
     void generateZobristHash();
     void draw();
@@ -53,7 +56,6 @@ class GameState
     bool equals(GameState* s);
     void copyFieldsTo(GameState* dest);
     bool hasStateAtPos(Vector2 pos, FieldState s);
-    std::string info;
     int calcHops();
 };
 

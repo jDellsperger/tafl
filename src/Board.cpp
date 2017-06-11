@@ -30,10 +30,10 @@ GameState* Board::addGameState(GameState* s)
     n->state.zobristHash = s->zobristHash;
     n->state.info = "Added in round " + std::to_string(this->roundCount) + ".";
     
-    ZobristEntryNode e = this->zobristHashTable[s->zobristHash];
-    ZobristNode* n2 = e.firstNode;
+    ZobristEntryNode* e = &this->zobristHashTable[s->zobristHash];
+    ZobristNode* n2 = e->firstNode;
     n->next = n2;
-    e.firstNode = n;
+    e->firstNode = n;
     
     GameState* result = &n->state;
     
@@ -44,7 +44,7 @@ GameState* Board::getZobristAddress(GameState* s)
 {
     GameState* result = this->getGameState(s);
     
-    if (!result)
+    if (result == nullptr)
     {
         result = this->addGameState(s);
     }

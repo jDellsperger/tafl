@@ -129,6 +129,8 @@ int main()
         }
         
         b->state = candidate;
+        b->state->repetitionCount++;
+        
         Player tempPlayer = activePlayer;
         activePlayer = inactivePlayer;
         inactivePlayer = tempPlayer;
@@ -152,6 +154,12 @@ int main()
             getchar();
             break;
         }
+        else if (victor == PLAYER_BOTH)
+        {
+            std::cout << "Tie!!!" << std::endl;
+            getchar();
+            break;
+        }
         
         std::cout << "Minimax value: " << b->state->val << std::endl;
         std::cout << "King position: ";
@@ -160,6 +168,7 @@ int main()
         std::cout << "Zobrist hash: " << b->state->zobristHash << std::endl;
         std::cout << b->state->info << std::endl;
         std::cout << "Hopcount: " << std::to_string(b->state->calcHops()) << std::endl;
+        std::cout << "Repetitions: " << std::to_string(b->state->repetitionCount) << std::endl;
         
         if (activePlayer == PLAYER_MAX)
         {

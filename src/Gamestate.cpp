@@ -346,7 +346,13 @@ int16_t GameState::calcQuadrantValue(Vector2 c, Vector2 t)
 
 Player GameState::checkVictory()
 {
-    Player victor = PLAYER_MAX;
+    Player victor = PLAYER_NONE;
+    
+    // Check if there is a tie
+    if (this->repetitionCount >= 3)
+    {
+        victor = PLAYER_BOTH;
+    }
     
     // Check if the max player captured the king
     Vector2 kingCap[4] = {
@@ -356,6 +362,7 @@ Player GameState::checkVictory()
         add(this->kingPos, {0, 1})
     };
     
+    bool maxCondition = true;
     for (int i = 0; i < 4; i++)
     {
         Vector2 capPos = kingCap[i];
@@ -363,15 +370,20 @@ Player GameState::checkVictory()
         {
             if (!this->hasStateAtPos(capPos, FIELD_BLACK))
             {
-                victor = PLAYER_NONE;
+                maxCondition = false;
                 break;
             }
         }
         else
         {
-            victor = PLAYER_NONE;
+            maxCondition = false;
             break;
         }
+    }
+    
+    if (maxCondition)
+    {
+        victor = PLAYER_MAX;
     }
     
     // Check if min player escaped with the king
@@ -385,6 +397,14 @@ Player GameState::checkVictory()
 
 void GameState::abPruning(int cutOff, Player player, int alpha, int beta)
 {
+    this->repetitionCount++;
+    if (this->repetitionCount >= 3)
+    {
+        this->val = 0;
+        this->repetitionCount--;
+        return;
+    }
+    
     if (cutOff > 0)
     {
         cutOff--;
@@ -412,6 +432,7 @@ void GameState::abPruning(int cutOff, Player player, int alpha, int beta)
                     if (alpha >= beta)
                     {
                         this->val = beta;
+                        this->repetitionCount--;
                         return;
                     }
                     
@@ -419,6 +440,7 @@ void GameState::abPruning(int cutOff, Player player, int alpha, int beta)
                 }
                 
                 this->val = alpha;
+                this->repetitionCount--;
                 return;
             }
         }
@@ -445,6 +467,7 @@ void GameState::abPruning(int cutOff, Player player, int alpha, int beta)
                     if (alpha >= beta)
                     {
                         this->val = alpha;
+                        this->repetitionCount--;
                         return;
                     }
                     
@@ -452,12 +475,14 @@ void GameState::abPruning(int cutOff, Player player, int alpha, int beta)
                 }
                 
                 this->val = beta;
+                this->repetitionCount--;
                 return;
             }
         }
     }
     
     this->val = this->evaluate();
+    this->repetitionCount--;
 }
 
 void GameState::minimax(int cutOff, Player player)
