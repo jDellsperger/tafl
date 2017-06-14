@@ -401,7 +401,7 @@ Player GameState::checkVictory()
         Vector2 capPos = kingCap[i];
         if (Board::isFieldPosValid(capPos))
         {
-            if (!this->hasStateAtPos(capPos, FIELD_BLACK))
+            if (!this->hasStateAtPos(capPos, FIELD_BLACK) || Board::isFieldPosThrone(capPos))
             {
                 maxCondition = false;
                 break;
