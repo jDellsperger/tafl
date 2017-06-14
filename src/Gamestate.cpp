@@ -327,28 +327,6 @@ int16_t GameState::evaluate()
         kingFreedom -= 2;
         
         val = hopCount + tokenDiff + kingFreedom;
-        
-        /*
-      Vector2 target;
-      
-      Vector2 tl = { 0, 0 };
-      Vector2 tr = { DIM-1, 0 };
-      Vector2 dl = { 0, DIM-1 };
-      Vector2 dr = { DIM-1, DIM-1 };
-      
-      Vector2 targets[] = { tl, tr, dl, dr };
-      
-      for (int i = 0; i < 4; i++)
-      {
-          int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
-          
-          if (val > temp)
-          {
-              target = targets[i];
-              val= temp;
-          }
-          
-      }*/
     }
     
     return val;
