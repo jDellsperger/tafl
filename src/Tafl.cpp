@@ -167,7 +167,6 @@ int main()
         
         std::cout << "Zobrist hash: " << b->state->zobristHash << std::endl;
         std::cout << b->state->info << std::endl;
-        std::cout << "Hopcount: " << std::to_string(b->state->calcHops()) << std::endl;
         std::cout << "Repetitions: " << std::to_string(b->state->repetitionCount) << std::endl;
         
         if (activePlayer == PLAYER_MAX)

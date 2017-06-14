@@ -30,6 +30,9 @@ class GameState
     void addMaxPlayerMove(GameState* resulting);
     void testCaptureAtPos(Vector2 pos, uint8_t allyState, 
                           FieldState enemyState, Board* b);
+    int calcHops();
+    int calcTokenDiff();
+    int calcKingFreedom();
     
     public:
     uint16_t zobristHash;
@@ -56,7 +59,6 @@ class GameState
     bool equals(GameState* s);
     void copyFieldsTo(GameState* dest);
     bool hasStateAtPos(Vector2 pos, FieldState s);
-    int calcHops();
 };
 
 class GraphVertex

@@ -295,27 +295,60 @@ int16_t GameState::evaluate()
     {
         val = 10;
     }
+    else if (victor == PLAYER_BOTH)
+    {
+        val = 0;
+    }
     else {
-        Vector2 target;
-        
-        Vector2 tl = { 0, 0 };
-        Vector2 tr = { DIM-1, 0 };
-        Vector2 dl = { 0, DIM-1 };
-        Vector2 dr = { DIM-1, DIM-1 };
-        
-        Vector2 targets[] = { tl, tr, dl, dr };
-        
-        for (int i = 0; i < 4; i++)
+        // Hops to target, [-6,6]
+        int hopCount = this->calcHops();
+        if (hopCount > 6)
         {
-            int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
-            
-            if (val > temp)
-            {
-                target = targets[i];
-                val= temp;
-            }
-            
+            hopCount = 6;
         }
+        
+        hopCount *= 2;
+        hopCount -= 6;
+        
+        // Diff white and black tokens, [-2,2]
+        int tokenDiff = this->calcTokenDiff();
+        if (tokenDiff > 2)
+        {
+            tokenDiff = 2;
+        }
+        else if (tokenDiff < -2)
+        {
+            tokenDiff = -2;
+        }
+        
+        // King degrees of freedom, [-2, 2]
+        int kingFreedom = this->calcKingFreedom();
+        kingFreedom *= 4/3;
+        kingFreedom -= 2;
+        
+        val = hopCount + tokenDiff + kingFreedom;
+        
+        /*
+      Vector2 target;
+      
+      Vector2 tl = { 0, 0 };
+      Vector2 tr = { DIM-1, 0 };
+      Vector2 dl = { 0, DIM-1 };
+      Vector2 dr = { DIM-1, DIM-1 };
+      
+      Vector2 targets[] = { tl, tr, dl, dr };
+      
+      for (int i = 0; i < 4; i++)
+      {
+          int temp = this->calcQuadrantValue(this->kingPos, targets[i]);
+          
+          if (val > temp)
+          {
+              target = targets[i];
+              val= temp;
+          }
+          
+      }*/
     }
     
     return val;
@@ -686,6 +719,49 @@ int GameState::calcHops()
         }
         
         result = hopCount;
+    }
+    
+    return result;
+}
+
+int GameState::calcTokenDiff()
+{
+    int result = 0;
+    
+    for (int16_t y = 0; y < DIM; y++)
+    {
+        for (int16_t x = 0; x < DIM; x++)
+        {
+            Vector2 p = {x, y};
+            
+            if (this->hasStateAtPos(p, FIELD_WHITE))
+            {
+                result--;
+            }
+            else if (this->hasStateAtPos(p, FIELD_BLACK))
+            {
+                result ++;
+            }
+        }
+    }
+    
+    return result;
+}
+
+int GameState::calcKingFreedom()
+{
+    int result = 0;
+    
+    Vector2 kingPos = this->kingPos;
+    for (int i = 0; i < 4; i++)
+    {
+        Vector2 dir = DIRECTIONS[i];
+        Vector2 p = add(dir, kingPos);
+        
+        if (this->hasStateAtPos(p, FIELD_BLACK))
+        {
+            result++;
+        }
     }
     
     return result;
